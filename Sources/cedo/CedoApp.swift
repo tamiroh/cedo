@@ -2,6 +2,11 @@ import AppKit
 import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // The UI is dark-only, so dialogs and scrollers should match
+        NSApp.appearance = NSAppearance(named: .darkAqua)
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Behave as a regular foreground app even when launched via `swift run`
         NSApp.setActivationPolicy(.regular)
@@ -24,6 +29,8 @@ struct CedoApp: App {
                 .environmentObject(workspace)
                 .onAppear { workspace.restoreOrPrompt() }
         }
+        .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 1100, height: 720)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("Open Folder…") { workspace.promptForFolder() }
