@@ -12,15 +12,24 @@ A minimal text editor for macOS.
 Run directly during development:
 
 ```sh
-swift run
+make run
 ```
 
-Build an app bundle at `build/cedo.app`:
+Build an app bundle at `build/cedo.app`, and open it:
 
 ```sh
-./scripts/bundle.sh
-open build/cedo.app
+make app
+make open
 ```
+
+Install it into `/Applications` (set `INSTALL_DIR` to install elsewhere):
+
+```sh
+make install
+make install INSTALL_DIR=~/Applications
+```
+
+`make build` builds the debug version, and `make clean` removes build outputs.
 
 ## Usage
 
