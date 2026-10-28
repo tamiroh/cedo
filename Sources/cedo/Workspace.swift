@@ -10,8 +10,27 @@ final class Workspace: ObservableObject {
     @Published var text = ""
     @Published private(set) var isDirty = false
     @Published private(set) var errorMessage: String?
+    @Published private(set) var shell: ShellSession?
+    @Published private(set) var isTerminalVisible = false
 
     private var savedText = ""
+
+    func toggleTerminal() {
+        guard let root else { return }
+        isTerminalVisible.toggle()
+        if isTerminalVisible && shell == nil {
+            startShell(in: root.url)
+        }
+    }
+
+    private func startShell(in directory: URL) {
+        shell = ShellSession(directory: directory) { [weak self] session in
+            // Ignore exits from a shell that has already been replaced
+            guard let self, self.shell === session else { return }
+            self.shell = nil
+            self.isTerminalVisible = false
+        }
+    }
 
     func restoreOrPrompt() {
         guard root == nil else { return }
@@ -37,6 +56,12 @@ final class Workspace: ObservableObject {
         guard confirmDiscardIfNeeded() else { return }
         root = FileNode(url: folder)
         clearEditor()
+        // The shell belongs to the old folder, so start a fresh one
+        shell?.terminate()
+        shell = nil
+        if isTerminalVisible {
+            startShell(in: folder)
+        }
         UserDefaults.standard.set(folder.path, forKey: Self.lastFolderKey)
     }
 

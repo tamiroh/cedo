@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var workspace: Workspace
+    @State private var terminalWidth: CGFloat = 440
+    @State private var dragStartWidth: CGFloat?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -14,6 +16,16 @@ struct ContentView: View {
                 }
             main
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            if workspace.isTerminalVisible, let shell = workspace.shell {
+                TerminalPanel(session: shell)
+                    .padding(.top, 36)
+                    .padding([.leading, .bottom], 12)
+                    .padding(.trailing, 8)
+                    .frame(width: terminalWidth)
+                    .frame(maxHeight: .infinity)
+                    .background(Theme.inset)
+                    .overlay(alignment: .leading) { terminalResizeHandle }
+            }
         }
         .foregroundStyle(Theme.text)
         .background(Theme.background)
@@ -61,6 +73,30 @@ struct ContentView: View {
         .padding(.top, 36)
         .padding(.horizontal, 32)
         .padding(.bottom, 24)
+    }
+
+    /// The terminal's left border, which can be dragged to resize the panel.
+    private var terminalResizeHandle: some View {
+        Rectangle()
+            .fill(Theme.border)
+            .frame(width: 1)
+            .overlay {
+                Color.clear
+                    .frame(width: 8)
+                    .contentShape(Rectangle())
+                    .onHover { inside in
+                        if inside { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
+                    }
+                    .gesture(
+                        DragGesture(coordinateSpace: .global)
+                            .onChanged { value in
+                                let start = dragStartWidth ?? terminalWidth
+                                dragStartWidth = start
+                                terminalWidth = min(max(start - value.translation.width, 240), 900)
+                            }
+                            .onEnded { _ in dragStartWidth = nil }
+                    )
+            }
     }
 
     private func header(for file: URL) -> some View {

@@ -5,7 +5,12 @@ A minimal text editor for macOS.
 ## Requirements
 
 - macOS 14 or later
-- Xcode (or the Swift toolchain) with Swift 5.10 or later
+- Xcode with Swift 5.10 or later
+- The Metal Toolchain, which the terminal library [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm) needs to build:
+
+  ```sh
+  xcodebuild -downloadComponent MetalToolchain
+  ```
 
 ## Build and run
 
@@ -36,6 +41,7 @@ make install INSTALL_DIR=~/Applications
 - **Open Folder…** (⌘O): open a folder as the project
 - Click a file in the tree to show it in the editor
 - **Save** (⌘S): save the current file
+- **Show Terminal** (⌃\`): toggle a terminal on the right, running your login shell in the project folder
 
 The header above the editor shows whether the file has unsaved changes. If you switch files or folders with unsaved changes, cedo asks whether to save them.
 

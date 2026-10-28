@@ -1,5 +1,5 @@
 APP := build/cedo.app
-BIN = $(shell swift build -c release --show-bin-path)/cedo
+BIN_DIR = $(shell swift build -c release --show-bin-path)
 INSTALL_DIR ?= /Applications
 
 .PHONY: build
@@ -14,8 +14,9 @@ run:
 app:
 	swift build -c release
 	rm -rf $(APP)
-	mkdir -p $(APP)/Contents/MacOS
-	cp $(BIN) $(APP)/Contents/MacOS/cedo
+	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
+	cp $(BIN_DIR)/cedo $(APP)/Contents/MacOS/cedo
+	cp -R $(BIN_DIR)/SwiftTerm_SwiftTerm.bundle $(APP)/Contents/Resources/
 	cp Support/Info.plist $(APP)/Contents/Info.plist
 
 .PHONY: open
