@@ -4,6 +4,7 @@ struct ContentView: View {
     @EnvironmentObject private var workspace: Workspace
     @State private var terminalWidth: CGFloat = 440
     @State private var dragStartWidth: CGFloat?
+    @State private var showsHistory = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -55,7 +56,10 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 0) {
             if let file = workspace.selectedFile {
                 header(for: file)
-                if let message = workspace.errorMessage {
+                if showsHistory {
+                    HistoryView(file: file)
+                        .id(file)
+                } else if let message = workspace.errorMessage {
                     Text(message)
                         .font(.system(size: 14))
                         .foregroundStyle(Theme.muted)
@@ -115,8 +119,29 @@ struct ContentView: View {
                     .font(.system(size: 12))
                     .foregroundStyle(Theme.muted)
             }
+            HStack(spacing: 14) {
+                tab("Edit", isActive: !showsHistory) { showsHistory = false }
+                tab("History", isActive: showsHistory) { showsHistory = true }
+            }
+            .padding(.leading, 8)
         }
         .padding(.bottom, 24)
+    }
+
+    private func tab(_ title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 13))
+                .foregroundStyle(isActive ? Theme.text : Theme.muted)
+                .padding(.bottom, 1)
+                .overlay(alignment: .bottom) {
+                    Rectangle()
+                        .fill(isActive ? Theme.text : .clear)
+                        .frame(height: 1)
+                }
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     /// The file's folder relative to the project root, or the root's name for top-level files.

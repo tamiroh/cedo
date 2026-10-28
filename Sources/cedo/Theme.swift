@@ -9,6 +9,9 @@ enum Theme {
     static let text = Color(hex: 0xe2e2e2)
     static let muted = Color(hex: 0x999999)
     static let selection = Color(hex: 0x34425a)
+    static let added = Color(hex: 0xa8c98a)
+    static let removed = Color(hex: 0xf0776c)
+    static let hunk = Color(hex: 0x8cb4f0)
 }
 
 extension Color {
