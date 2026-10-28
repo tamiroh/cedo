@@ -21,31 +21,3 @@ extension Color {
         )
     }
 }
-
-/// A transparent button with a thin border that fills in on hover.
-struct OutlineButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        OutlineButton(configuration: configuration)
-    }
-
-    private struct OutlineButton: View {
-        let configuration: Configuration
-        @State private var hovering = false
-
-        var body: some View {
-            configuration.label
-                .font(.system(size: 13))
-                .foregroundStyle(Theme.text)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 5)
-                .padding(.horizontal, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(hovering || configuration.isPressed ? Theme.surface : .clear)
-                )
-                .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Theme.border))
-                .contentShape(Rectangle())
-                .onHover { hovering = $0 }
-        }
-    }
-}

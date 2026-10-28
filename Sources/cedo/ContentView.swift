@@ -27,13 +27,10 @@ struct ContentView: View {
                 .font(.system(size: 14, weight: .semibold))
                 .lineLimit(1)
                 .padding(.horizontal, 8)
-            Button("Open Folder…") { workspace.promptForFolder() }
-                .buttonStyle(OutlineButtonStyle())
-                .padding(.top, 16)
-                .padding(.bottom, 8)
             if let root = workspace.root {
                 FileTreeView(root: root)
                     .id(root.url)
+                    .padding(.top, 12)
             }
         }
         // Leave room for the window's traffic-light buttons
@@ -56,7 +53,7 @@ struct ContentView: View {
                         .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Theme.border))
                 }
             } else {
-                Text(workspace.root == nil ? "No folder open." : "No file selected.")
+                Text(workspace.root == nil ? "No folder open. Press ⌘O to open one." : "No file selected.")
                     .font(.system(size: 14))
                     .foregroundStyle(Theme.muted)
             }
