@@ -38,12 +38,6 @@ make install INSTALL_DIR=~/Applications
 
 ## Usage
 
-- **Open Folder…** (⌘O): open a folder as the project
-- Click a file in the tree to show it in the editor
-- **Show Terminal** (⌃\`): toggle a terminal on the right, running your login shell in the project folder
-
-cedo saves automatically a moment after you stop typing, and whenever you switch files, switch to another app, or quit. If the open file is changed by something else, such as a command in the terminal, cedo reloads it; if you were editing it at the same moment, cedo asks which version to keep.
-
-If the folder is a Git repository, cedo commits the files you edit once you pause: five minutes without editing, switching to another file or folder, or quitting. Only files edited in cedo go into these commits; anything else you have staged is left alone. Use **History** above the editor to see a file's commits.
-
-Hidden files are not shown in the tree. Only UTF-8 text files can be opened.
+- Open a folder with ⌘O, then select a file to edit. Changes save automatically.
+- Toggle the terminal with ⌃\`.
+- In Git repositories, edited files are committed after five idle minutes, when switching files or folders, or on quit. View commits in **History**.
