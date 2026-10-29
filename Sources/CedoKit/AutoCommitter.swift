@@ -4,11 +4,11 @@ import Foundation
 ///
 /// A pause is a few idle minutes after saving, switching to another file or folder, or quitting.
 /// Only files saved in cedo are committed; other changes in the repository are left alone.
-final class AutoCommitter {
+public final class AutoCommitter {
     private static let idleDelay: TimeInterval = 5 * 60
 
     /// Called on the main thread after a commit has been made.
-    var onCommit: (() -> Void)?
+    public var onCommit: (() -> Void)?
 
     // Accessed on the main thread only
     private var pending: Set<URL> = []
@@ -17,20 +17,22 @@ final class AutoCommitter {
     // Runs commits one at a time so git never races itself for the index lock
     private let queue = DispatchQueue(label: "cedo.auto-commit")
 
-    func fileSaved(_ file: URL) {
+    public init() {}
+
+    public func fileSaved(_ file: URL) {
         pending.insert(file)
         restartIdleTimer()
     }
 
     /// Typing pushes the pause further out, as long as something is waiting to be committed.
-    func textChanged() {
+    public func textChanged() {
         if !pending.isEmpty {
             restartIdleTimer()
         }
     }
 
     /// Commits everything saved so far.
-    func flush() {
+    public func flush() {
         idleTimer?.cancel()
         idleTimer = nil
         guard !pending.isEmpty else { return }
@@ -45,7 +47,7 @@ final class AutoCommitter {
     }
 
     /// Commits everything saved so far and waits until the commits are done.
-    func flushAndWait() {
+    public func flushAndWait() {
         flush()
         queue.sync {}
     }

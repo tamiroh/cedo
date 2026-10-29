@@ -1,3 +1,4 @@
+import CedoKit
 import SwiftUI
 
 struct FileTreeView: View {

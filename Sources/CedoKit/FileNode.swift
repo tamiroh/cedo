@@ -1,21 +1,21 @@
 import Foundation
 
 /// A node in the file tree. Children are loaded the first time they are accessed.
-final class FileNode: Identifiable, Hashable {
-    let url: URL
-    let isDirectory: Bool
+public final class FileNode: Identifiable, Hashable {
+    public let url: URL
+    public let isDirectory: Bool
 
-    var id: URL { url }
-    var name: String { url.lastPathComponent }
+    public var id: URL { url }
+    public var name: String { url.lastPathComponent }
 
-    init(url: URL) {
+    public init(url: URL) {
         self.url = url
         let values = try? url.resourceValues(forKeys: [.isDirectoryKey])
         self.isDirectory = values?.isDirectory ?? false
     }
 
     /// Child nodes (directories first, then by name) for a directory, or nil for a file.
-    lazy var children: [FileNode]? = {
+    public lazy var children: [FileNode]? = {
         guard isDirectory else { return nil }
         let urls = (try? FileManager.default.contentsOfDirectory(
             at: url,
@@ -28,6 +28,6 @@ final class FileNode: Identifiable, Hashable {
         }
     }()
 
-    static func == (lhs: FileNode, rhs: FileNode) -> Bool { lhs.url == rhs.url }
-    func hash(into hasher: inout Hasher) { hasher.combine(url) }
+    public static func == (lhs: FileNode, rhs: FileNode) -> Bool { lhs.url == rhs.url }
+    public func hash(into hasher: inout Hasher) { hasher.combine(url) }
 }

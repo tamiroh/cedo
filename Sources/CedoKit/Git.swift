@@ -1,25 +1,25 @@
 import Foundation
 
-struct Commit: Identifiable, Hashable {
-    let hash: String
-    let shortHash: String
-    let author: String
-    let date: String
-    let subject: String
+public struct Commit: Identifiable, Hashable {
+    public let hash: String
+    public let shortHash: String
+    public let author: String
+    public let date: String
+    public let subject: String
     /// The file's path at this commit, relative to the repository root.
-    let path: String
+    public let path: String
 
-    var id: String { hash }
+    public var id: String { hash }
 }
 
-enum Git {
+public enum Git {
     struct Failure: LocalizedError {
         let message: String
         var errorDescription: String? { message }
     }
 
     /// Commits that touched the file, newest first, following renames.
-    static func history(of file: URL) async throws -> [Commit] {
+    public static func history(of file: URL) async throws -> [Commit] {
         let output = try await run(
             ["log", "--follow", "--no-color", "--name-only",
              "--format=%x1e%H%x1f%h%x1f%an%x1f%ar%x1f%s",
@@ -39,7 +39,7 @@ enum Git {
     }
 
     /// The changes the commit made to the file.
-    static func diff(of commit: Commit, near file: URL) async throws -> String {
+    public static func diff(of commit: Commit, near file: URL) async throws -> String {
         try await run(
             ["show", "--no-color", "--format=", commit.hash, "--", ":(top)" + commit.path],
             in: file.deletingLastPathComponent()

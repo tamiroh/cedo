@@ -10,6 +10,10 @@ build:
 run:
 	swift run
 
+.PHONY: test
+test:
+	swift test
+
 .PHONY: app
 app:
 	swift build -c release

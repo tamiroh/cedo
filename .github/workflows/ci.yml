@@ -13,4 +13,5 @@ jobs:
       - run: swift --version
       - run: xcodebuild -downloadComponent MetalToolchain
       - run: make build
+      - run: make test
       - run: make app

@@ -34,7 +34,7 @@ make install
 make install INSTALL_DIR=~/Applications
 ```
 
-`make build` builds the debug version, and `make clean` removes build outputs.
+`make build` builds the debug version, `make test` runs the tests, and `make clean` removes build outputs.
 
 ## Usage
 

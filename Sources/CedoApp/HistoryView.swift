@@ -1,3 +1,4 @@
+import CedoKit
 import SwiftUI
 
 /// The Git history of one file: its commits on the left, and the selected commit's diff on the right.
