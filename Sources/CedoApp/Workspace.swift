@@ -9,8 +9,8 @@ final class Workspace: ObservableObject {
     private static let outsideChangeInterval: TimeInterval = 1
 
     @Published private(set) var root: FileNode?
-    @Published var selectedFile: URL?
-    @Published var text = ""
+    @Published private(set) var selectedFile: URL?
+    @Published private(set) var document: Document?
     @Published private(set) var saveFailed = false
     @Published private(set) var errorMessage: String?
     @Published private(set) var shell: ShellSession?
@@ -18,15 +18,12 @@ final class Workspace: ObservableObject {
     /// Bumped after each auto-commit so the history view can reload.
     @Published private(set) var historyVersion = 0
 
-    /// The file's content as cedo last read or wrote it, used to spot both unsaved edits and outside changes.
-    private var savedText = ""
-    private var savedModificationDate: Date?
     private var saveTimer: Timer?
     private var outsideChangeTimer: Timer?
     private var isResolvingConflict = false
     private let autoCommitter = AutoCommitter()
 
-    private var isDirty: Bool { text != savedText }
+    var text: String { document?.text ?? "" }
 
     init() {
         autoCommitter.onCommit = { [weak self] in self?.historyVersion += 1 }
@@ -107,7 +104,7 @@ final class Workspace: ObservableObject {
     }
 
     func textDidChange(_ newText: String) {
-        text = newText
+        document?.text = newText
         autoCommitter.textChanged()
         saveTimer?.invalidate()
         saveTimer = Timer.scheduledTimer(withTimeInterval: Self.saveDelay, repeats: false) { [weak self] _ in
@@ -119,41 +116,42 @@ final class Workspace: ObservableObject {
     func save() {
         saveTimer?.invalidate()
         saveTimer = nil
-        guard let url = selectedFile, errorMessage == nil, isDirty, !isResolvingConflict else { return }
-        if let onDisk = try? String(contentsOf: url, encoding: .utf8), onDisk != savedText {
-            resolveConflict(in: url, onDisk: onDisk)
-        } else {
-            write(text, to: url)
-        }
+        guard !isResolvingConflict else { return }
+        write()
     }
 
-    private func write(_ content: String, to url: URL) {
+    private func write(overwritingOutsideChanges: Bool = false) {
+        guard let url = document?.url else { return }
         do {
-            try content.write(to: url, atomically: true, encoding: .utf8)
-            savedText = content
-            savedModificationDate = modificationDate(of: url)
-            saveFailed = false
-            autoCommitter.fileSaved(url)
+            switch try document?.save(overwritingOutsideChanges: overwritingOutsideChanges) {
+            case .saved:
+                saveFailed = false
+                autoCommitter.fileSaved(url)
+            case .conflict(let onDisk):
+                resolveConflict(in: url, onDisk: onDisk)
+            case .unchanged, nil:
+                break
+            }
         } catch {
             saveFailed = true
             NSLog("cedo: failed to save %@: %@", url.path, error.localizedDescription)
         }
     }
 
-    /// Picks up changes made to the open file by something else, such as a command in the terminal.
     private func checkForOutsideChanges() {
-        guard let url = selectedFile, errorMessage == nil, !isResolvingConflict else { return }
-        let date = modificationDate(of: url)
-        guard date != savedModificationDate,
-              let onDisk = try? String(contentsOf: url, encoding: .utf8) else { return }
-        guard onDisk != savedText else {
-            savedModificationDate = date
-            return
+        guard var checked = document, !isResolvingConflict else { return }
+        let change = checked.checkForOutsideChanges()
+        // Assigning back on every poll would redraw the views every second
+        if checked != document {
+            document = checked
         }
-        if isDirty {
-            resolveConflict(in: url, onDisk: onDisk)
-        } else {
-            adopt(onDisk, from: url)
+        switch change {
+        case .reloaded:
+            saveFailed = false
+        case .conflict(let onDisk):
+            resolveConflict(in: checked.url, onDisk: onDisk)
+        case .unchanged:
+            break
         }
     }
 
@@ -171,25 +169,19 @@ final class Workspace: ObservableObject {
             // Record the other version in the history before replacing it
             autoCommitter.fileSaved(url)
             autoCommitter.flushAndWait()
-            write(text, to: url)
+            write(overwritingOutsideChanges: true)
         } else {
-            adopt(onDisk, from: url)
+            document?.adopt(onDisk)
+            saveFailed = false
         }
-    }
-
-    private func adopt(_ content: String, from url: URL) {
-        text = content
-        savedText = content
-        savedModificationDate = modificationDate(of: url)
-        saveFailed = false
     }
 
     /// Saves before leaving the current file. Returns false if saving failed and the user chose to stay.
     private func saveBeforeLeaving() -> Bool {
         save()
-        guard isDirty, let url = selectedFile else { return true }
+        guard let document, document.isDirty else { return true }
         let alert = NSAlert()
-        alert.messageText = "Couldn't save \(url.lastPathComponent)."
+        alert.messageText = "Couldn't save \(document.url.lastPathComponent)."
         alert.informativeText = "If you continue, your latest changes will be lost."
         alert.addButton(withTitle: "Cancel")
         alert.addButton(withTitle: "Discard Changes")
@@ -199,9 +191,8 @@ final class Workspace: ObservableObject {
     private func load(_ url: URL) {
         clearEditor()
         selectedFile = url
-        if let content = try? String(contentsOf: url, encoding: .utf8) {
-            adopt(content, from: url)
-        } else {
+        document = Document(url: url)
+        if document == nil {
             errorMessage = "Cannot open \(url.lastPathComponent) as UTF-8 text."
         }
     }
@@ -210,15 +201,9 @@ final class Workspace: ObservableObject {
         saveTimer?.invalidate()
         saveTimer = nil
         selectedFile = nil
-        text = ""
-        savedText = ""
-        savedModificationDate = nil
+        document = nil
         saveFailed = false
         errorMessage = nil
-    }
-
-    private func modificationDate(of url: URL) -> Date? {
-        try? FileManager.default.attributesOfItem(atPath: url.path)[.modificationDate] as? Date
     }
 
     private func isDirectory(_ url: URL) -> Bool {
