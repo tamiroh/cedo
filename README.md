@@ -1,6 +1,6 @@
 # cedo
 
-A “minimal" text editor for macOS.
+A “minimal” text editor for macOS.
 
 ## Requirements
 
