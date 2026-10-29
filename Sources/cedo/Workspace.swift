@@ -12,8 +12,15 @@ final class Workspace: ObservableObject {
     @Published private(set) var errorMessage: String?
     @Published private(set) var shell: ShellSession?
     @Published private(set) var isTerminalVisible = false
+    /// Bumped after each auto-commit so the history view can reload.
+    @Published private(set) var historyVersion = 0
 
     private var savedText = ""
+    private let autoCommitter = AutoCommitter()
+
+    init() {
+        autoCommitter.onCommit = { [weak self] in self?.historyVersion += 1 }
+    }
 
     func toggleTerminal() {
         guard let root else { return }
@@ -54,6 +61,7 @@ final class Workspace: ObservableObject {
 
     func open(folder: URL) {
         guard confirmDiscardIfNeeded() else { return }
+        autoCommitter.flush()
         root = FileNode(url: folder)
         clearEditor()
         // The shell belongs to the old folder, so start a fresh one
@@ -69,12 +77,14 @@ final class Workspace: ObservableObject {
         guard url != selectedFile else { return }
         guard let url, !isDirectory(url) else { return }
         guard confirmDiscardIfNeeded() else { return }
+        autoCommitter.flush()
         load(url)
     }
 
     func textDidChange(_ newText: String) {
         text = newText
         isDirty = newText != savedText
+        autoCommitter.textChanged()
     }
 
     func save() {
@@ -83,6 +93,7 @@ final class Workspace: ObservableObject {
             try text.write(to: url, atomically: true, encoding: .utf8)
             savedText = text
             isDirty = false
+            autoCommitter.fileSaved(url)
         } catch {
             showError("Failed to save \(url.lastPathComponent): \(error.localizedDescription)")
         }

@@ -46,29 +46,45 @@ enum Git {
         )
     }
 
-    private static func run(_ arguments: [String], in directory: URL) async throws -> String {
-        try await Task.detached {
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
-            process.arguments = ["-C", directory.path] + arguments
-            let stdout = Pipe()
-            let stderr = Pipe()
-            process.standardOutput = stdout
-            process.standardError = stderr
-            try process.run()
-            // Read before waiting so a large output cannot fill the pipe and block git
-            let output = stdout.fileHandleForReading.readDataToEndOfFile()
-            let error = stderr.fileHandleForReading.readDataToEndOfFile()
-            process.waitUntilExit()
+    /// The root of the repository that contains the file.
+    static func topLevel(of file: URL) throws -> URL {
+        let path = try runSync(["rev-parse", "--show-toplevel"], in: file.deletingLastPathComponent())
+        return URL(fileURLWithPath: path.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
 
-            guard process.terminationStatus == 0 else {
-                let message = String(decoding: error, as: UTF8.self)
-                if message.contains("not a git repository") {
-                    throw Failure(message: "This file is not in a Git repository.")
-                }
-                throw Failure(message: message.trimmingCharacters(in: .whitespacesAndNewlines))
+    /// The file's content at HEAD, or nil if it is not committed yet.
+    static func headVersion(of file: URL) -> String? {
+        try? runSync(["show", "HEAD:./" + file.lastPathComponent], in: file.deletingLastPathComponent())
+    }
+
+    private static func run(_ arguments: [String], in directory: URL) async throws -> String {
+        try await Task.detached { try runSync(arguments, in: directory) }.value
+    }
+
+    /// Runs git and returns its output. Blocks until git exits.
+    @discardableResult
+    static func runSync(_ arguments: [String], in directory: URL) throws -> String {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+        // Without core.quotePath=false, git escapes non-ASCII paths such as Japanese file names
+        process.arguments = ["-C", directory.path, "-c", "core.quotePath=false"] + arguments
+        let stdout = Pipe()
+        let stderr = Pipe()
+        process.standardOutput = stdout
+        process.standardError = stderr
+        try process.run()
+        // Read before waiting so a large output cannot fill the pipe and block git
+        let output = stdout.fileHandleForReading.readDataToEndOfFile()
+        let error = stderr.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+
+        guard process.terminationStatus == 0 else {
+            let message = String(decoding: error, as: UTF8.self)
+            if message.contains("not a git repository") {
+                throw Failure(message: "This file is not in a Git repository.")
             }
-            return String(decoding: output, as: UTF8.self)
-        }.value
+            throw Failure(message: message.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        return String(decoding: output, as: UTF8.self)
     }
 }

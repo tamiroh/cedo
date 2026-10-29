@@ -57,7 +57,7 @@ struct ContentView: View {
             if let file = workspace.selectedFile {
                 header(for: file)
                 if showsHistory {
-                    HistoryView(file: file)
+                    HistoryView(file: file, refreshKey: workspace.historyVersion)
                         .id(file)
                 } else if let message = workspace.errorMessage {
                     Text(message)

@@ -45,4 +45,6 @@ make install INSTALL_DIR=~/Applications
 
 The header above the editor shows whether the file has unsaved changes. If you switch files or folders with unsaved changes, cedo asks whether to save them.
 
+If the folder is a Git repository, cedo commits the files you save once you pause: five minutes without editing, switching to another file or folder, or quitting. Only files saved in cedo go into these commits; anything else you have staged is left alone. Use **History** above the editor to see a file's commits.
+
 Hidden files are not shown in the tree. Only UTF-8 text files can be opened.

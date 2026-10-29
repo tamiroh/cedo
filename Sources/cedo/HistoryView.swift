@@ -3,6 +3,8 @@ import SwiftUI
 /// The Git history of one file: its commits on the left, and the selected commit's diff on the right.
 struct HistoryView: View {
     let file: URL
+    /// Changing this reloads the history, e.g. after an auto-commit.
+    let refreshKey: Int
     @State private var commits: Loadable<[Commit]> = .loading
     @State private var selected: Commit?
     @State private var diff: Loadable<String> = .loading
@@ -24,7 +26,7 @@ struct HistoryView: View {
                 }
             }
         }
-        .task { await load() }
+        .task(id: refreshKey) { await load() }
     }
 
     private func commitList(_ commits: [Commit]) -> some View {
