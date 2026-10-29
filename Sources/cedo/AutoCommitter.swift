@@ -1,4 +1,3 @@
-import AppKit
 import Foundation
 
 /// Commits saved files when the writer pauses, so each commit is roughly one burst of writing.
@@ -17,17 +16,6 @@ final class AutoCommitter {
 
     // Runs commits one at a time so git never races itself for the index lock
     private let queue = DispatchQueue(label: "cedo.auto-commit")
-
-    init() {
-        NotificationCenter.default.addObserver(
-            forName: NSApplication.willTerminateNotification, object: nil, queue: .main
-        ) { [weak self] _ in
-            guard let self else { return }
-            self.flush()
-            // Wait for the commit to finish before the app exits
-            self.queue.sync {}
-        }
-    }
 
     func fileSaved(_ file: URL) {
         pending.insert(file)
@@ -54,6 +42,12 @@ final class AutoCommitter {
                 DispatchQueue.main.async { onCommit?() }
             }
         }
+    }
+
+    /// Commits everything saved so far and waits until the commits are done.
+    func flushAndWait() {
+        flush()
+        queue.sync {}
     }
 
     private func restartIdleTimer() {

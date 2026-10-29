@@ -4,6 +4,8 @@ import SwiftUI
 /// A monospaced plain-text editor with smart quotes and other automatic substitutions turned off.
 struct CodeTextView: NSViewRepresentable {
     let text: String
+    /// The file being edited. A new document resets the scroll position and undo history.
+    let document: URL
     let onChange: (String) -> Void
 
     private static let attributes: [NSAttributedString.Key: Any] = {
@@ -37,18 +39,32 @@ struct CodeTextView: NSViewRepresentable {
         textView.isAutomaticSpellingCorrectionEnabled = false
         textView.isContinuousSpellCheckingEnabled = false
         setText(text, in: textView)
+        context.coordinator.document = document
         return scrollView
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         context.coordinator.onChange = onChange
         let textView = scrollView.documentView as! NSTextView
-        // Replace the contents only when a different file has been loaded
-        if textView.string != text {
+        let isNewDocument = context.coordinator.document != document
+        context.coordinator.document = document
+        if isNewDocument {
             setText(text, in: textView)
             textView.undoManager?.removeAllActions()
             textView.scrollToBeginningOfDocument(nil)
+            return
         }
+        // Typing keeps the two in sync, so a difference means the file was reloaded after an outside change
+        guard textView.string != text else { return }
+        let selection = textView.selectedRange()
+        let origin = scrollView.contentView.bounds.origin
+        setText(text, in: textView)
+        textView.undoManager?.removeAllActions()
+        // Keep the caret and scroll position where they were
+        let length = (text as NSString).length
+        textView.setSelectedRange(NSRange(location: min(selection.location, length), length: 0))
+        scrollView.contentView.scroll(to: origin)
+        scrollView.reflectScrolledClipView(scrollView.contentView)
     }
 
     private func setText(_ text: String, in textView: NSTextView) {
@@ -57,6 +73,7 @@ struct CodeTextView: NSViewRepresentable {
 
     final class Coordinator: NSObject, NSTextViewDelegate {
         var onChange: (String) -> Void
+        var document: URL?
 
         init(onChange: @escaping (String) -> Void) { self.onChange = onChange }
 

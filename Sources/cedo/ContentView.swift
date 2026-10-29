@@ -64,7 +64,7 @@ struct ContentView: View {
                         .font(.system(size: 14))
                         .foregroundStyle(Theme.muted)
                 } else {
-                    CodeTextView(text: workspace.text, onChange: workspace.textDidChange)
+                    CodeTextView(text: workspace.text, document: file, onChange: workspace.textDidChange)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                         .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Theme.border))
                 }
@@ -114,10 +114,10 @@ struct ContentView: View {
                 .lineLimit(1)
                 .truncationMode(.head)
             Spacer(minLength: 16)
-            if workspace.errorMessage == nil {
-                Text(workspace.isDirty ? "Unsaved" : "Saved")
+            if workspace.saveFailed {
+                Text("Couldn't save")
                     .font(.system(size: 12))
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.danger)
             }
             HStack(spacing: 14) {
                 tab("Edit", isActive: !showsHistory) { showsHistory = false }
