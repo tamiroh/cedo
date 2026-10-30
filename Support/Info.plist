@@ -4,6 +4,7 @@
 <dict>
     <key>CFBundleName</key><string>cedo</string>
     <key>CFBundleExecutable</key><string>cedo</string>
+    <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundleIdentifier</key><string>com.tamiroh.cedo</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>0.1.0</string>
