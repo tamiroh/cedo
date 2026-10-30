@@ -84,7 +84,7 @@ struct ContentView: View {
 
     private func panel(_ panel: Workspace.Panel) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 14) {
+            HStack(spacing: 2) {
                 tab("Terminal", isActive: panel == .terminal) { workspace.show(.terminal) }
                     .disabled(workspace.root == nil)
                 tab("Log", isActive: panel == .log) { workspace.show(.log) }
@@ -141,7 +141,7 @@ struct ContentView: View {
                     .font(.system(size: 12))
                     .foregroundStyle(Theme.danger)
             }
-            HStack(spacing: 14) {
+            HStack(spacing: 2) {
                 tab("Edit", isActive: !showsHistory) { showsHistory = false }
                 tab("History", isActive: showsHistory) { showsHistory = true }
             }
@@ -151,19 +151,7 @@ struct ContentView: View {
     }
 
     private func tab(_ title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 13))
-                .foregroundStyle(isActive ? Theme.text : Theme.muted)
-                .padding(.bottom, 1)
-                .overlay(alignment: .bottom) {
-                    Rectangle()
-                        .fill(isActive ? Theme.text : .clear)
-                        .frame(height: 1)
-                }
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
+        TabButton(title: title, isActive: isActive, action: action)
     }
 
     /// The file's folder relative to the project root, or the root's name for top-level files.
@@ -173,5 +161,30 @@ struct ContentView: View {
         let dirPath = file.deletingLastPathComponent().standardizedFileURL.path
         guard dirPath.hasPrefix(rootPath + "/") else { return root.name }
         return String(dirPath.dropFirst(rootPath.count + 1))
+    }
+}
+
+/// A tab marked like a selected row in the file tree.
+private struct TabButton: View {
+    let title: String
+    let isActive: Bool
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 13))
+                .foregroundStyle(isActive ? Theme.text : Theme.muted)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(isActive ? Theme.selected : hovering ? Theme.surface : .clear)
+                )
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
     }
 }
