@@ -18,6 +18,8 @@ final class Workspace: ObservableObject {
     }
 
     private static let lastFolderKey = "lastFolderPath"
+    /// The file last opened in each folder, keyed by the folder's path.
+    private static let lastFilesKey = "lastFilePaths"
     private static let saveDelay: TimeInterval = 1
     private static let outsideChangeInterval: TimeInterval = 1
     private static let lintDelay: TimeInterval = 0.5
@@ -139,6 +141,13 @@ final class Workspace: ObservableObject {
             startShell(in: folder)
         }
         UserDefaults.standard.set(folder.path, forKey: Self.lastFolderKey)
+
+        let lastFiles = UserDefaults.standard.dictionary(forKey: Self.lastFilesKey) as? [String: String]
+        if let path = lastFiles?[folder.path], FileManager.default.fileExists(atPath: path),
+            !isDirectory(URL(fileURLWithPath: path))
+        {
+            load(URL(fileURLWithPath: path))
+        }
     }
 
     func select(_ url: URL?) {
@@ -244,6 +253,11 @@ final class Workspace: ObservableObject {
     private func load(_ url: URL) {
         clearEditor()
         selectedFile = url
+        if let root {
+            var lastFiles = UserDefaults.standard.dictionary(forKey: Self.lastFilesKey) as? [String: String] ?? [:]
+            lastFiles[root.url.path] = url.path
+            UserDefaults.standard.set(lastFiles, forKey: Self.lastFilesKey)
+        }
         document = Document(url: url)
         if document == nil {
             log.error("Couldn't open \(url.lastPathComponent) as UTF-8 text")

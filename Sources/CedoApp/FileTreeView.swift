@@ -25,6 +25,7 @@ struct FileTreeView: View {
             }
             .padding(.bottom, 16)
         }
+        .onAppear { expandFolders(containing: workspace.selectedFile) }
     }
 
     /// The nodes currently visible, flattened in display order.
@@ -40,6 +41,16 @@ struct FileTreeView: View {
         }
         visit(root.children ?? [], depth: 0)
         return result
+    }
+
+    /// Opens the folders down to a file, so a file restored at launch is visible in the tree.
+    private func expandFolders(containing file: URL?) {
+        guard var folder = file?.deletingLastPathComponent().standardizedFileURL else { return }
+        let rootPath = root.url.standardizedFileURL.path
+        while folder.path.hasPrefix(rootPath + "/") {
+            expanded.insert(folder)
+            folder = folder.deletingLastPathComponent()
+        }
     }
 
     private func toggle(_ url: URL) {
