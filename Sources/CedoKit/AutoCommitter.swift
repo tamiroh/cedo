@@ -16,8 +16,11 @@ public final class AutoCommitter {
 
     // Runs commits one at a time so git never races itself for the index lock
     private let queue = DispatchQueue(label: "cedo.auto-commit")
+    private let log: DebugLog
 
-    public init() {}
+    public init(log: DebugLog) {
+        self.log = log
+    }
 
     public func fileSaved(_ file: URL) {
         pending.insert(file)
@@ -39,8 +42,9 @@ public final class AutoCommitter {
         let files = pending
         pending = []
         let onCommit = onCommit
+        let log = log
         queue.async {
-            if Self.commit(files) {
+            if Self.commit(files, log: log) {
                 DispatchQueue.main.async { onCommit?() }
             }
         }
@@ -60,36 +64,48 @@ public final class AutoCommitter {
     }
 
     /// Commits the files, one commit per repository. Returns true if any commit was made.
-    private static func commit(_ files: Set<URL>) -> Bool {
-        // Files outside a Git repository are skipped
+    private static func commit(_ files: Set<URL>, log: DebugLog) -> Bool {
         let byRepository = Dictionary(grouping: files) { try? Git.topLevel(of: $0) }
         var committed = false
-        for case let (repository?, files) in byRepository {
+        for (repository, files) in byRepository {
+            guard let repository else {
+                log.info("Not committing files outside a Git repository: " + names(files))
+                continue
+            }
             do {
-                if try commit(files.sorted { $0.path < $1.path }, in: repository) {
+                if let message = try commit(files.sorted { $0.path < $1.path }, in: repository) {
+                    log.info("Committed in \(repository.lastPathComponent): \(message.prefix { $0 != "\n" })")
                     committed = true
+                } else {
+                    log.info("Nothing to commit: " + names(files))
                 }
             } catch {
-                NSLog("cedo: auto-commit failed in %@: %@", repository.path, error.localizedDescription)
+                log.error("Auto-commit failed in \(repository.lastPathComponent): \(error.localizedDescription)")
             }
         }
         return committed
     }
 
-    private static func commit(_ files: [URL], in repository: URL) throws -> Bool {
+    private static func names(_ files: [URL]) -> String {
+        files.map(\.lastPathComponent).sorted().joined(separator: ", ")
+    }
+
+    /// Returns the commit message, or nil if no file differs from HEAD.
+    private static func commit(_ files: [URL], in repository: URL) throws -> String? {
         var changes: [Change] = []
         for file in files {
             let old = Git.headVersion(of: file) ?? ""
             guard let new = try? String(contentsOf: file, encoding: .utf8), new != old else { continue }
             changes.append(Change(file: file, characterDelta: new.count - old.count))
         }
-        guard !changes.isEmpty else { return false }
+        guard !changes.isEmpty else { return nil }
 
         let paths = changes.map(\.file.path)
         // `add` picks up new files; `--only` keeps anything else the user has staged out of this commit
         try Git.runSync(["add", "--"] + paths, in: repository)
-        try Git.runSync(["commit", "--quiet", "--only", "-m", message(for: changes), "--"] + paths, in: repository)
-        return true
+        let message = message(for: changes)
+        try Git.runSync(["commit", "--quiet", "--only", "-m", message, "--"] + paths, in: repository)
+        return message
     }
 
     struct Change {

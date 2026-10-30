@@ -24,7 +24,7 @@ struct AutoCommitterTests {
         try write("someone else's", to: "staged.md")
         try git("add", "staged.md")
 
-        let committer = AutoCommitter()
+        let committer = AutoCommitter(log: DebugLog())
         for name in ["edited.md", "new.md", "unchanged.md"] {
             committer.fileSaved(file(name))
         }
@@ -38,7 +38,7 @@ struct AutoCommitterTests {
     }
 
     @Test func makesNoCommitWhenNothingChanged() throws {
-        let committer = AutoCommitter()
+        let committer = AutoCommitter(log: DebugLog())
         committer.fileSaved(file("unchanged.md"))
         committer.flushAndWait()
 

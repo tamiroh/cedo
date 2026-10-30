@@ -4,6 +4,11 @@ import Foundation
 
 @MainActor
 final class Workspace: ObservableObject {
+    enum Panel {
+        case terminal
+        case log
+    }
+
     private static let lastFolderKey = "lastFolderPath"
     private static let saveDelay: TimeInterval = 1
     private static let outsideChangeInterval: TimeInterval = 1
@@ -14,14 +19,16 @@ final class Workspace: ObservableObject {
     @Published private(set) var saveFailed = false
     @Published private(set) var errorMessage: String?
     @Published private(set) var shell: ShellSession?
-    @Published private(set) var isTerminalVisible = false
+    /// What the right pane shows, if it is open.
+    @Published private(set) var panel: Panel?
     /// Bumped after each auto-commit so the history view can reload.
     @Published private(set) var historyVersion = 0
 
     private var saveTimer: Timer?
     private var outsideChangeTimer: Timer?
     private var isResolvingConflict = false
-    private let autoCommitter = AutoCommitter()
+    let log = DebugLog()
+    private lazy var autoCommitter = AutoCommitter(log: log)
 
     var text: String { document?.text ?? "" }
 
@@ -44,20 +51,34 @@ final class Workspace: ObservableObject {
         }
     }
 
-    func toggleTerminal() {
-        guard let root else { return }
-        isTerminalVisible.toggle()
-        if isTerminalVisible && shell == nil {
-            startShell(in: root.url)
+    func toggle(_ panel: Panel) {
+        if self.panel == panel {
+            self.panel = nil
+        } else {
+            show(panel)
         }
     }
 
+    func show(_ panel: Panel) {
+        if panel == .terminal {
+            guard let root else { return }
+            if shell == nil {
+                startShell(in: root.url)
+            }
+        }
+        self.panel = panel
+    }
+
     private func startShell(in directory: URL) {
+        log.info("Started a shell in \(directory.lastPathComponent)")
         shell = ShellSession(directory: directory) { [weak self] session in
             // Ignore exits from a shell that has already been replaced
             guard let self, self.shell === session else { return }
+            self.log.info("The shell exited")
             self.shell = nil
-            self.isTerminalVisible = false
+            if self.panel == .terminal {
+                self.panel = nil
+            }
         }
     }
 
@@ -84,12 +105,13 @@ final class Workspace: ObservableObject {
     func open(folder: URL) {
         guard saveBeforeLeaving() else { return }
         autoCommitter.flush()
+        log.info("Opened folder \(folder.path)")
         root = FileNode(url: folder)
         clearEditor()
         // The shell belongs to the old folder, so start a fresh one
         shell?.terminate()
         shell = nil
-        if isTerminalVisible {
+        if panel == .terminal {
             startShell(in: folder)
         }
         UserDefaults.standard.set(folder.path, forKey: Self.lastFolderKey)
@@ -125,6 +147,7 @@ final class Workspace: ObservableObject {
         do {
             switch try document?.save(overwritingOutsideChanges: overwritingOutsideChanges) {
             case .saved:
+                log.info("Saved \(url.lastPathComponent)")
                 saveFailed = false
                 autoCommitter.fileSaved(url)
             case .conflict(let onDisk):
@@ -134,7 +157,7 @@ final class Workspace: ObservableObject {
             }
         } catch {
             saveFailed = true
-            NSLog("cedo: failed to save %@: %@", url.path, error.localizedDescription)
+            log.error("Couldn't save \(url.lastPathComponent): \(error.localizedDescription)")
         }
     }
 
@@ -147,6 +170,7 @@ final class Workspace: ObservableObject {
         }
         switch change {
         case .reloaded:
+            log.info("Reloaded \(checked.url.lastPathComponent) after it changed outside cedo")
             saveFailed = false
         case .conflict(let onDisk):
             resolveConflict(in: checked.url, onDisk: onDisk)
@@ -159,6 +183,7 @@ final class Workspace: ObservableObject {
     private func resolveConflict(in url: URL, onDisk: String) {
         isResolvingConflict = true
         defer { isResolvingConflict = false }
+        log.info("\(url.lastPathComponent) changed outside cedo while being edited")
 
         let alert = NSAlert()
         alert.messageText = "\(url.lastPathComponent) was changed outside cedo."
@@ -169,8 +194,10 @@ final class Workspace: ObservableObject {
             // Record the other version in the history before replacing it
             autoCommitter.fileSaved(url)
             autoCommitter.flushAndWait()
+            log.info("Kept the edits in cedo")
             write(overwritingOutsideChanges: true)
         } else {
+            log.info("Took the version changed outside cedo")
             document?.adopt(onDisk)
             saveFailed = false
         }
@@ -185,7 +212,9 @@ final class Workspace: ObservableObject {
         alert.informativeText = "If you continue, your latest changes will be lost."
         alert.addButton(withTitle: "Cancel")
         alert.addButton(withTitle: "Discard Changes")
-        return alert.runModal() == .alertSecondButtonReturn
+        guard alert.runModal() == .alertSecondButtonReturn else { return false }
+        log.info("Discarded unsaved edits to \(document.url.lastPathComponent)")
+        return true
     }
 
     private func load(_ url: URL) {
@@ -193,6 +222,7 @@ final class Workspace: ObservableObject {
         selectedFile = url
         document = Document(url: url)
         if document == nil {
+            log.error("Couldn't open \(url.lastPathComponent) as UTF-8 text")
             errorMessage = "Cannot open \(url.lastPathComponent) as UTF-8 text."
         }
     }

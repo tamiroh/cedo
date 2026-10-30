@@ -42,11 +42,15 @@ struct CedoApp: App {
                     .disabled(workspace.selectedFile == nil)
             }
             CommandGroup(before: .toolbar) {
-                Button(workspace.isTerminalVisible ? "Hide Terminal" : "Show Terminal") {
-                    workspace.toggleTerminal()
+                Button(workspace.panel == .terminal ? "Hide Terminal" : "Show Terminal") {
+                    workspace.toggle(.terminal)
                 }
                 .keyboardShortcut("`", modifiers: .control)
                 .disabled(workspace.root == nil)
+                Button(workspace.panel == .log ? "Hide Debug Log" : "Show Debug Log") {
+                    workspace.toggle(.log)
+                }
+                .keyboardShortcut("l", modifiers: [.option, .command])
             }
         }
     }

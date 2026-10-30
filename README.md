@@ -40,4 +40,5 @@ make install INSTALL_DIR=~/Applications
 
 - Open a folder with ⌘O, then select a file to edit. Changes save automatically.
 - Toggle the terminal with ⌃\`.
+- Toggle the debug log, which shows saves, commits and other background activity, with ⌥⌘L.
 - In Git repositories, edited files are committed after five idle minutes, when switching files or folders, or on quit. View commits in **History**.

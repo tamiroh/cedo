@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var workspace: Workspace
-    @State private var terminalWidth: CGFloat = 440
+    @State private var panelWidth: CGFloat = 440
     @State private var dragStartWidth: CGFloat?
     @State private var showsHistory = false
 
@@ -17,15 +17,14 @@ struct ContentView: View {
                 }
             main
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            if workspace.isTerminalVisible, let shell = workspace.shell {
-                TerminalPanel(session: shell)
+            if let panel = workspace.panel {
+                self.panel(panel)
                     .padding(.top, 36)
                     .padding([.leading, .bottom], 12)
-                    .padding(.trailing, 8)
-                    .frame(width: terminalWidth)
+                    .frame(width: panelWidth)
                     .frame(maxHeight: .infinity)
                     .background(Theme.inset)
-                    .overlay(alignment: .leading) { terminalResizeHandle }
+                    .overlay(alignment: .leading) { panelResizeHandle }
             }
         }
         .foregroundStyle(Theme.text)
@@ -82,8 +81,27 @@ struct ContentView: View {
         .padding(.top, 36)
     }
 
-    /// The terminal's left border, which can be dragged to resize the panel.
-    private var terminalResizeHandle: some View {
+    private func panel(_ panel: Workspace.Panel) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 14) {
+                tab("Terminal", isActive: panel == .terminal) { workspace.show(.terminal) }
+                    .disabled(workspace.root == nil)
+                tab("Log", isActive: panel == .log) { workspace.show(.log) }
+            }
+            switch panel {
+            case .terminal:
+                if let shell = workspace.shell {
+                    TerminalPanel(session: shell)
+                        .padding(.trailing, 8)
+                }
+            case .log:
+                LogView(log: workspace.log)
+            }
+        }
+    }
+
+    /// The panel's left border, which can be dragged to resize it.
+    private var panelResizeHandle: some View {
         Rectangle()
             .fill(Theme.border)
             .frame(width: 1)
@@ -97,9 +115,9 @@ struct ContentView: View {
                     .gesture(
                         DragGesture(coordinateSpace: .global)
                             .onChanged { value in
-                                let start = dragStartWidth ?? terminalWidth
+                                let start = dragStartWidth ?? panelWidth
                                 dragStartWidth = start
-                                terminalWidth = min(max(start - value.translation.width, 240), 900)
+                                panelWidth = min(max(start - value.translation.width, 240), 900)
                             }
                             .onEnded { _ in dragStartWidth = nil }
                     )
