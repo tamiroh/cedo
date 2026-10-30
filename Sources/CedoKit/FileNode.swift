@@ -34,12 +34,7 @@ public final class FileNode: Identifiable, Hashable {
         }
     }()
 
-    // Includes the hidden-files setting, so SwiftUI redraws the tree when it changes
-    public static func == (lhs: FileNode, rhs: FileNode) -> Bool {
-        lhs.url == rhs.url && lhs.includesHiddenFiles == rhs.includesHiddenFiles
-    }
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(url)
-        hasher.combine(includesHiddenFiles)
-    }
+    // Compared by identity, so a freshly read tree always counts as a change and SwiftUI redraws it
+    public static func == (lhs: FileNode, rhs: FileNode) -> Bool { lhs === rhs }
+    public func hash(into hasher: inout Hasher) { hasher.combine(ObjectIdentifier(self)) }
 }

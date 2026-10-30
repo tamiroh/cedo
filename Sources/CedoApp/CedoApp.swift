@@ -33,6 +33,9 @@ struct CedoApp: App {
         .defaultSize(width: 1100, height: 720)
         .commands {
             CommandGroup(replacing: .newItem) {
+                Button("New File…") { workspace.newFile() }
+                    .keyboardShortcut("n")
+                    .disabled(workspace.root == nil)
                 Button("Open Folder…") { workspace.promptForFolder() }
                     .keyboardShortcut("o")
             }

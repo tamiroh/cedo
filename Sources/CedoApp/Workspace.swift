@@ -110,6 +110,46 @@ final class Workspace: ObservableObject {
         }
     }
 
+    /// Asks for a name and creates an empty file, by default next to the open file.
+    func newFile(in directory: URL? = nil) {
+        guard let root else { return }
+        let folder = directory ?? selectedFile?.deletingLastPathComponent() ?? root.url
+        let field = NSTextField(string: "Untitled.md")
+        field.frame = NSRect(x: 0, y: 0, width: 260, height: 24)
+        let alert = NSAlert()
+        alert.messageText = "New File"
+        alert.informativeText = "In \(folder.lastPathComponent)"
+        alert.accessoryView = field
+        alert.addButton(withTitle: "Create")
+        alert.addButton(withTitle: "Cancel")
+        alert.window.initialFirstResponder = field
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+
+        let name = field.stringValue.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty, !name.contains("/") else {
+            showAlert("“\(name)” can't be used as a file name.")
+            return
+        }
+        let file = folder.appendingPathComponent(name)
+        do {
+            try Data().write(to: file, options: .withoutOverwriting)
+        } catch {
+            showAlert(
+                FileManager.default.fileExists(atPath: file.path)
+                    ? "\(name) already exists." : "Couldn't create \(name): \(error.localizedDescription)")
+            return
+        }
+        log.info("Created \(name)")
+        self.root = FileNode(url: root.url, includesHiddenFiles: ui.showsHiddenFiles)
+        select(file)
+    }
+
+    private func showAlert(_ message: String) {
+        let alert = NSAlert()
+        alert.messageText = message
+        alert.runModal()
+    }
+
     func restoreOrPrompt() {
         guard root == nil else { return }
         if let path = ui.folderPath, isDirectory(URL(fileURLWithPath: path)) {
