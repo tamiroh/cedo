@@ -11,6 +11,7 @@ struct UIState: Codable {
     var panel: Panel?
     var panelWidth: Double = 440
     var showsHistory = false
+    var showsHiddenFiles = false
 
     private static let key = "uiState"
 
@@ -25,6 +26,8 @@ struct UIState: Codable {
         panel = try container.decodeIfPresent(Panel.self, forKey: .panel)
         panelWidth = try container.decodeIfPresent(Double.self, forKey: .panelWidth) ?? defaults.panelWidth
         showsHistory = try container.decodeIfPresent(Bool.self, forKey: .showsHistory) ?? defaults.showsHistory
+        showsHiddenFiles =
+            try container.decodeIfPresent(Bool.self, forKey: .showsHiddenFiles) ?? defaults.showsHiddenFiles
     }
 
     static func load() -> UIState {

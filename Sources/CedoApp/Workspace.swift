@@ -102,6 +102,14 @@ final class Workspace: ObservableObject {
         }
     }
 
+    func toggleHiddenFiles() {
+        ui.showsHiddenFiles.toggle()
+        log.info(ui.showsHiddenFiles ? "Showing hidden files" : "Hiding hidden files")
+        if let root {
+            self.root = FileNode(url: root.url, includesHiddenFiles: ui.showsHiddenFiles)
+        }
+    }
+
     func restoreOrPrompt() {
         guard root == nil else { return }
         if let path = ui.folderPath, isDirectory(URL(fileURLWithPath: path)) {
@@ -129,7 +137,7 @@ final class Workspace: ObservableObject {
         guard saveBeforeLeaving() else { return }
         autoCommitter.flush()
         log.info("Opened folder \(folder.path)")
-        root = FileNode(url: folder)
+        root = FileNode(url: folder, includesHiddenFiles: ui.showsHiddenFiles)
         textlint = Textlint(root: folder)
         if textlint != nil {
             log.info("Found textlint in \(folder.lastPathComponent)")

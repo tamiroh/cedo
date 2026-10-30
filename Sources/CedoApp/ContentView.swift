@@ -30,8 +30,18 @@ struct ContentView: View {
         }
         .foregroundStyle(Theme.text)
         .background(Theme.background)
+        .background { hiddenFilesShortcut }
         .ignoresSafeArea()
         .frame(minWidth: 700, minHeight: 400)
+    }
+
+    /// ⌘⇧. as in the Finder, kept out of the menus on purpose.
+    private var hiddenFilesShortcut: some View {
+        Button("") { workspace.toggleHiddenFiles() }
+            .keyboardShortcut(".", modifiers: [.command, .shift])
+            .opacity(0)
+            .frame(width: 0, height: 0)
+            .accessibilityHidden(true)
     }
 
     private var sidebar: some View {
