@@ -9,13 +9,25 @@ final class Workspace: ObservableObject {
         case log
     }
 
+    /// textlint's report on one version of a file's text.
+    struct Lint {
+        let id = UUID()
+        let file: URL
+        let text: String
+        let diagnostics: [Textlint.Diagnostic]
+    }
+
     private static let lastFolderKey = "lastFolderPath"
     private static let saveDelay: TimeInterval = 1
     private static let outsideChangeInterval: TimeInterval = 1
+    private static let lintDelay: TimeInterval = 0.5
 
     @Published private(set) var root: FileNode?
     @Published private(set) var selectedFile: URL?
-    @Published private(set) var document: Document?
+    @Published private(set) var document: Document? {
+        didSet { documentDidChange(from: oldValue) }
+    }
+    @Published private(set) var lint: Lint?
     @Published private(set) var saveFailed = false
     @Published private(set) var errorMessage: String?
     @Published private(set) var shell: ShellSession?
@@ -27,6 +39,10 @@ final class Workspace: ObservableObject {
     private var saveTimer: Timer?
     private var outsideChangeTimer: Timer?
     private var isResolvingConflict = false
+    private var textlint: Textlint?
+    private var lintTimer: Timer?
+    private var lintTask: Task<Void, Never>?
+    private var lastLintError: String?
     let log = DebugLog()
     private lazy var autoCommitter = AutoCommitter(log: log)
 
@@ -107,6 +123,10 @@ final class Workspace: ObservableObject {
         autoCommitter.flush()
         log.info("Opened folder \(folder.path)")
         root = FileNode(url: folder)
+        textlint = Textlint(root: folder)
+        if textlint != nil {
+            log.info("Found textlint in \(folder.lastPathComponent)")
+        }
         clearEditor()
         // The shell belongs to the old folder, so start a fresh one
         shell?.terminate()
@@ -234,6 +254,42 @@ final class Workspace: ObservableObject {
         document = nil
         saveFailed = false
         errorMessage = nil
+    }
+
+    private func documentDidChange(from old: Document?) {
+        let isNewFile = document?.url != old?.url
+        guard isNewFile || document?.text != old?.text else { return }
+        lintTimer?.invalidate()
+        lintTask?.cancel()
+        if isNewFile {
+            lint = nil
+            runLint()
+        } else {
+            lintTimer = Timer.scheduledTimer(withTimeInterval: Self.lintDelay, repeats: false) { [weak self] _ in
+                MainActor.assumeIsolated { self?.runLint() }
+            }
+        }
+    }
+
+    private func runLint() {
+        guard let textlint, let document else { return }
+        let text = document.text
+        let file = document.url
+        lintTask = Task {
+            do {
+                let diagnostics = try await textlint.lint(text, of: file)
+                lint = Lint(file: file, text: text, diagnostics: diagnostics)
+                lastLintError = nil
+            } catch {
+                guard !Task.isCancelled else { return }
+                // The same failure would otherwise be logged after every pause in typing
+                let message = error.localizedDescription
+                if message != lastLintError {
+                    log.error("textlint failed: \(message)")
+                }
+                lastLintError = message
+            }
+        }
     }
 
     private func isDirectory(_ url: URL) -> Bool {

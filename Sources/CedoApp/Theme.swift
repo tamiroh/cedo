@@ -10,6 +10,7 @@ enum Theme {
     static let muted = Color(hex: 0x999999)
     static let selection = Color(hex: 0x34425a)
     static let danger = Color(hex: 0xf0776c)
+    static let warning = Color(hex: 0xe5c07b)
     static let added = Color(hex: 0xa8c98a)
     static let removed = danger
     static let hunk = Color(hex: 0x8cb4f0)
