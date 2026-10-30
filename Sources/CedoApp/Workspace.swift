@@ -30,6 +30,7 @@ final class Workspace: ObservableObject {
         didSet { documentDidChange(from: oldValue) }
     }
     @Published private(set) var lint: Lint?
+    @Published private(set) var configuration: Configuration?
     @Published private(set) var saveFailed = false
     @Published private(set) var errorMessage: String?
     @Published private(set) var shell: ShellSession?
@@ -42,6 +43,7 @@ final class Workspace: ObservableObject {
     private var outsideChangeTimer: Timer?
     private var isResolvingConflict = false
     private var textlint: Textlint?
+    private var configurationModificationDate: Date?
     private var lintTimer: Timer?
     private var lintTask: Task<Void, Never>?
     private var lastLintError: String?
@@ -68,7 +70,10 @@ final class Workspace: ObservableObject {
         }
         outsideChangeTimer = Timer.scheduledTimer(withTimeInterval: Self.outsideChangeInterval, repeats: true) {
             [weak self] _ in
-            MainActor.assumeIsolated { self?.checkForOutsideChanges() }
+            MainActor.assumeIsolated {
+                self?.checkForOutsideChanges()
+                self?.reloadConfigurationIfChanged()
+            }
         }
     }
 
@@ -133,6 +138,9 @@ final class Workspace: ObservableObject {
         if textlint != nil {
             log.info("Found textlint in \(folder.lastPathComponent)")
         }
+        configurationModificationDate = nil
+        configuration = nil
+        reloadConfigurationIfChanged()
         clearEditor()
         // The shell belongs to the old folder, so start a fresh one
         shell?.terminate()
@@ -307,6 +315,24 @@ final class Workspace: ObservableObject {
                 }
                 lastLintError = message
             }
+        }
+    }
+
+    /// Reads the folder's settings again when the file is added, edited or removed.
+    private func reloadConfigurationIfChanged() {
+        guard let root else { return }
+        let url = Configuration.url(in: root.url)
+        let date = try? FileManager.default.attributesOfItem(atPath: url.path)[.modificationDate] as? Date
+        guard date != configurationModificationDate else { return }
+        configurationModificationDate = date
+        do {
+            configuration = try Configuration(root: root.url)
+            if configuration != nil {
+                log.info("Loaded \(Configuration.fileName)")
+            }
+        } catch {
+            configuration = nil
+            log.error(error.localizedDescription)
         }
     }
 

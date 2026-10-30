@@ -1,4 +1,5 @@
 import AppKit
+import CedoKit
 import SwiftUI
 
 /// A monospaced plain-text editor with smart quotes and other automatic substitutions turned off.
@@ -7,6 +8,7 @@ struct CodeTextView: NSViewRepresentable {
     /// The file being edited. A new document resets the scroll position and undo history.
     let document: URL
     let lint: Workspace.Lint?
+    let configuration: Configuration?
     let onChange: (String) -> Void
 
     /// Views above the text use the same horizontal inset to line up with it.
@@ -92,6 +94,7 @@ struct CodeTextView: NSViewRepresentable {
             scrollView.reflectScrolledClipView(scrollView.contentView)
         }
         context.coordinator.show(lint, for: document)
+        context.coordinator.applyHighlights(of: configuration)
     }
 
     private func setText(_ text: String, in textView: NSTextView) {
@@ -105,6 +108,8 @@ struct CodeTextView: NSViewRepresentable {
         private var shownLintID: UUID?
         private var toolTips: [NSView.ToolTipTag: String] = [:]
         private var needsToolTips = false
+        private var appliedConfigurationID: UUID?
+        private var highlightsAreStale = true
 
         private var layoutManager: LintLayoutManager? { textView?.layoutManager as? LintLayoutManager }
 
@@ -149,6 +154,9 @@ struct CodeTextView: NSViewRepresentable {
             _ textStorage: NSTextStorage, didProcessEditing editedMask: NSTextStorageEditActions,
             range editedRange: NSRange, changeInLength delta: Int
         ) {
+            if editedMask.contains(.editedCharacters) {
+                highlightsAreStale = true
+            }
             guard editedMask.contains(.editedCharacters), let layoutManager, !layoutManager.marks.isEmpty else {
                 return
             }
@@ -163,6 +171,34 @@ struct CodeTextView: NSViewRepresentable {
                 return moved
             }
             setNeedsToolTips()
+        }
+
+        /// Colors the text that matches the folder's highlight patterns, after an edit or a change to the settings.
+        func applyHighlights(of configuration: Configuration?) {
+            guard highlightsAreStale || configuration?.id != appliedConfigurationID,
+                let textView, let layoutManager
+            else { return }
+            highlightsAreStale = false
+            appliedConfigurationID = configuration?.id
+            let text = textView.string
+            let all = NSRange(location: 0, length: (text as NSString).length)
+            layoutManager.removeTemporaryAttribute(.foregroundColor, forCharacterRange: all)
+            layoutManager.removeTemporaryAttribute(.backgroundColor, forCharacterRange: all)
+            guard let configuration else { return }
+            for match in configuration.highlightMatches(in: text) {
+                let highlight = configuration.highlights[match.highlight]
+                var attributes: [NSAttributedString.Key: Any] = [:]
+                if let color = highlight.color {
+                    attributes[.foregroundColor] = NSColor(Color(hex: color))
+                }
+                if let background = highlight.background {
+                    attributes[.backgroundColor] = NSColor(Color(hex: background))
+                }
+                if attributes.isEmpty {
+                    attributes[.backgroundColor] = NSColor(Theme.selection)
+                }
+                layoutManager.addTemporaryAttributes(attributes, forCharacterRange: match.range)
+            }
         }
 
         @objc func frameDidChange() {

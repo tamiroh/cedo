@@ -73,7 +73,9 @@ struct ContentView: View {
                         .padding(.top, 12)
                 } else {
                     CodeTextView(
-                        text: workspace.text, document: file, lint: workspace.lint, onChange: workspace.textDidChange)
+                        text: workspace.text, document: file, lint: workspace.lint,
+                        configuration: workspace.configuration,
+                        onChange: workspace.textDidChange)
                 }
             } else {
                 Text(workspace.root == nil ? "No folder open. Press ⌘O to open one." : "No file selected.")
