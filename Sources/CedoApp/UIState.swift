@@ -12,6 +12,8 @@ struct UIState: Codable {
     var panelWidth: Double = 440
     var showsHistory = false
     var showsHiddenFiles = false
+    /// Full-width characters per line, or nil to fill the window.
+    var textColumns: Int?
 
     private static let key = "uiState"
 
@@ -28,6 +30,7 @@ struct UIState: Codable {
         showsHistory = try container.decodeIfPresent(Bool.self, forKey: .showsHistory) ?? defaults.showsHistory
         showsHiddenFiles =
             try container.decodeIfPresent(Bool.self, forKey: .showsHiddenFiles) ?? defaults.showsHiddenFiles
+        textColumns = try container.decodeIfPresent(Int.self, forKey: .textColumns)
     }
 
     static func load() -> UIState {

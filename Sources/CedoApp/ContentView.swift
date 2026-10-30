@@ -3,6 +3,8 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var workspace: Workspace
     @State private var dragStartWidth: CGFloat?
+    @State private var editorWidth: CGFloat = 0
+    @State private var columnDragStartWidth: CGFloat?
 
     /// The header row, shared by the editor and the panel so their tabs line up.
     private static let headerHeight: CGFloat = 24
@@ -63,15 +65,15 @@ struct ContentView: View {
 
     @ViewBuilder
     private var main: some View {
-        let margin = CodeTextView.textInset.width
+        let margin = textMargin
         VStack(alignment: .leading, spacing: 0) {
             if let file = workspace.selectedFile {
                 header(for: file)
-                    .padding(.horizontal, margin)
+                    .padding(.horizontal, CodeTextView.textInset.width)
                 if workspace.ui.showsHistory {
                     HistoryView(file: file, refreshKey: workspace.historyVersion)
                         .id(file)
-                        .padding([.horizontal, .bottom], margin)
+                        .padding([.horizontal, .bottom], CodeTextView.textInset.width)
                         .padding(.top, 12)
                 } else if let message = workspace.errorMessage {
                     Text(message)
@@ -82,8 +84,10 @@ struct ContentView: View {
                 } else {
                     CodeTextView(
                         text: workspace.text, document: file, lint: workspace.lint,
-                        configuration: workspace.configuration,
-                        onChange: workspace.textDidChange)
+                        configuration: workspace.configuration, horizontalInset: margin,
+                        onChange: workspace.textDidChange
+                    )
+                    .overlay { columnHandles(margin: margin) }
                 }
             } else {
                 Text(workspace.root == nil ? "No folder open. Press ⌘O to open one." : "No file selected.")
@@ -93,6 +97,59 @@ struct ContentView: View {
             }
         }
         .padding(.top, 36)
+        .onGeometryChange(for: CGFloat.self) {
+            $0.size.width
+        } action: {
+            editorWidth = $0
+        }
+    }
+
+    /// The space on each side of the text, which narrows it to the chosen number of characters per line.
+    private var textMargin: CGFloat {
+        let minimum = CodeTextView.textInset.width
+        guard let columns = workspace.ui.textColumns else { return minimum }
+        let width = CGFloat(columns) * CodeTextView.characterWidth + 1
+        return max(minimum, ((editorWidth - width) / 2).rounded(.down))
+    }
+
+    /// Grab areas just outside both edges of the text. Dragging either one resizes the text around its center.
+    private func columnHandles(margin: CGFloat) -> some View {
+        HStack(spacing: 0) {
+            columnHandle(direction: -1)
+                .padding(.leading, margin - 20)
+            Spacer()
+            columnHandle(direction: 1)
+                .padding(.trailing, margin - 20)
+        }
+        .overlay(alignment: .top) {
+            if columnDragStartWidth != nil {
+                Text(workspace.ui.textColumns.map { "\($0) characters per line" } ?? "Fit to window")
+                    .font(.system(size: 12))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(RoundedRectangle(cornerRadius: 4).fill(Theme.selected))
+                    .padding(.top, 8)
+            }
+        }
+    }
+
+    private func columnHandle(direction: CGFloat) -> some View {
+        ColumnHandle(isDragging: columnDragStartWidth != nil) { translation in
+            let minimum = CodeTextView.textInset.width
+            let start = columnDragStartWidth ?? editorWidth - 2 * textMargin
+            columnDragStartWidth = start
+            let width = start + 2 * direction * translation
+            let columns = Int((width / CodeTextView.characterWidth).rounded())
+            if CGFloat(columns) * CodeTextView.characterWidth >= editorWidth - 2 * minimum {
+                workspace.ui.textColumns = nil
+            } else {
+                workspace.ui.textColumns = max(columns, 10)
+            }
+        } onEnd: {
+            columnDragStartWidth = nil
+        } onReset: {
+            workspace.ui.textColumns = nil
+        }
     }
 
     private func panel(_ panel: UIState.Panel) -> some View {
@@ -203,5 +260,32 @@ private struct TabButton: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
+    }
+}
+
+private struct ColumnHandle: View {
+    let isDragging: Bool
+    let onDrag: (CGFloat) -> Void
+    let onEnd: () -> Void
+    let onReset: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Rectangle()
+            .fill(hovering || isDragging ? Theme.border : .clear)
+            .frame(width: 1)
+            .frame(width: 12)
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .onHover { inside in
+                hovering = inside
+                if inside { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
+            }
+            .onTapGesture(count: 2, perform: onReset)
+            .gesture(
+                DragGesture(coordinateSpace: .global)
+                    .onChanged { onDrag($0.translation.width) }
+                    .onEnded { _ in onEnd() }
+            )
     }
 }

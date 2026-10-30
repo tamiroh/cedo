@@ -9,9 +9,10 @@ struct CodeTextView: NSViewRepresentable {
     let document: URL
     let lint: Workspace.Lint?
     let configuration: Configuration?
+    /// Space on each side of the text. Views above the text use the same value to line up with it.
+    let horizontalInset: CGFloat
     let onChange: (String) -> Void
 
-    /// Views above the text use the same horizontal inset to line up with it.
     static let textInset = NSSize(width: 32, height: 12)
 
     private static let attributes: [NSAttributedString.Key: Any] = {
@@ -23,6 +24,9 @@ struct CodeTextView: NSViewRepresentable {
             .paragraphStyle: paragraph,
         ]
     }()
+
+    /// The width of one full-width character, the unit for the number of characters per line.
+    static let characterWidth = NSAttributedString(string: "あ", attributes: attributes).size().width
 
     func makeCoordinator() -> Coordinator { Coordinator(onChange: onChange) }
 
@@ -74,6 +78,10 @@ struct CodeTextView: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         context.coordinator.onChange = onChange
         guard let textView = context.coordinator.textView else { return }
+        if textView.textContainerInset.width != horizontalInset {
+            textView.textContainerInset = NSSize(width: horizontalInset, height: Self.textInset.height)
+            context.coordinator.setNeedsToolTips()
+        }
         let isNewDocument = context.coordinator.document != document
         context.coordinator.document = document
         if isNewDocument {
@@ -206,7 +214,7 @@ struct CodeTextView: NSViewRepresentable {
         }
 
         /// Rebuilds the hover areas once the current change has been laid out.
-        private func setNeedsToolTips() {
+        func setNeedsToolTips() {
             guard !needsToolTips else { return }
             needsToolTips = true
             DispatchQueue.main.async { [weak self] in
