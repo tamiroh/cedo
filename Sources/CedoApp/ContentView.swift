@@ -2,9 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var workspace: Workspace
-    @State private var panelWidth: CGFloat = 440
     @State private var dragStartWidth: CGFloat?
-    @State private var showsHistory = false
 
     /// The header row, shared by the editor and the panel so their tabs line up.
     private static let headerHeight: CGFloat = 24
@@ -24,7 +22,7 @@ struct ContentView: View {
                 self.panel(panel)
                     .padding(.top, 36)
                     .padding([.leading, .bottom], 12)
-                    .frame(width: panelWidth)
+                    .frame(width: workspace.ui.panelWidth)
                     .frame(maxHeight: .infinity)
                     .background(Theme.inset)
                     .overlay(alignment: .leading) { panelResizeHandle }
@@ -60,7 +58,7 @@ struct ContentView: View {
             if let file = workspace.selectedFile {
                 header(for: file)
                     .padding(.horizontal, margin)
-                if showsHistory {
+                if workspace.ui.showsHistory {
                     HistoryView(file: file, refreshKey: workspace.historyVersion)
                         .id(file)
                         .padding([.horizontal, .bottom], margin)
@@ -87,7 +85,7 @@ struct ContentView: View {
         .padding(.top, 36)
     }
 
-    private func panel(_ panel: Workspace.Panel) -> some View {
+    private func panel(_ panel: UIState.Panel) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 2) {
                 tab("Terminal", isActive: panel == .terminal) { workspace.show(.terminal) }
@@ -122,9 +120,9 @@ struct ContentView: View {
                     .gesture(
                         DragGesture(coordinateSpace: .global)
                             .onChanged { value in
-                                let start = dragStartWidth ?? panelWidth
+                                let start = dragStartWidth ?? workspace.ui.panelWidth
                                 dragStartWidth = start
-                                panelWidth = min(max(start - value.translation.width, 240), 900)
+                                workspace.ui.panelWidth = min(max(start - value.translation.width, 240), 900)
                             }
                             .onEnded { _ in dragStartWidth = nil }
                     )
@@ -150,8 +148,8 @@ struct ContentView: View {
                     .foregroundStyle(Theme.danger)
             }
             HStack(spacing: 2) {
-                tab("Edit", isActive: !showsHistory) { showsHistory = false }
-                tab("History", isActive: showsHistory) { showsHistory = true }
+                tab("Edit", isActive: !workspace.ui.showsHistory) { workspace.ui.showsHistory = false }
+                tab("History", isActive: workspace.ui.showsHistory) { workspace.ui.showsHistory = true }
             }
             .padding(.leading, 8)
         }

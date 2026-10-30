@@ -4,11 +4,6 @@ import Foundation
 
 @MainActor
 final class Workspace: ObservableObject {
-    enum Panel {
-        case terminal
-        case log
-    }
-
     /// textlint's report on one version of a file's text.
     struct Lint {
         let id = UUID()
@@ -17,9 +12,6 @@ final class Workspace: ObservableObject {
         let diagnostics: [Textlint.Diagnostic]
     }
 
-    private static let lastFolderKey = "lastFolderPath"
-    /// The file last opened in each folder, keyed by the folder's path.
-    private static let lastFilesKey = "lastFilePaths"
     private static let saveDelay: TimeInterval = 1
     private static let outsideChangeInterval: TimeInterval = 1
     private static let lintDelay: TimeInterval = 0.5
@@ -34,8 +26,9 @@ final class Workspace: ObservableObject {
     @Published private(set) var saveFailed = false
     @Published private(set) var errorMessage: String?
     @Published private(set) var shell: ShellSession?
-    /// What the right pane shows, if it is open.
-    @Published private(set) var panel: Panel?
+    @Published var ui = UIState.load() {
+        didSet { ui.save() }
+    }
     /// Bumped after each auto-commit so the history view can reload.
     @Published private(set) var historyVersion = 0
 
@@ -51,6 +44,7 @@ final class Workspace: ObservableObject {
     private lazy var autoCommitter = AutoCommitter(log: log)
 
     var text: String { document?.text ?? "" }
+    var panel: UIState.Panel? { ui.panel }
 
     init() {
         autoCommitter.onCommit = { [weak self] in self?.historyVersion += 1 }
@@ -77,22 +71,22 @@ final class Workspace: ObservableObject {
         }
     }
 
-    func toggle(_ panel: Panel) {
+    func toggle(_ panel: UIState.Panel) {
         if self.panel == panel {
-            self.panel = nil
+            ui.panel = nil
         } else {
             show(panel)
         }
     }
 
-    func show(_ panel: Panel) {
+    func show(_ panel: UIState.Panel) {
         if panel == .terminal {
             guard let root else { return }
             if shell == nil {
                 startShell(in: root.url)
             }
         }
-        self.panel = panel
+        ui.panel = panel
     }
 
     private func startShell(in directory: URL) {
@@ -103,19 +97,21 @@ final class Workspace: ObservableObject {
             self.log.info("The shell exited")
             self.shell = nil
             if self.panel == .terminal {
-                self.panel = nil
+                self.ui.panel = nil
             }
         }
     }
 
     func restoreOrPrompt() {
         guard root == nil else { return }
-        if let path = UserDefaults.standard.string(forKey: Self.lastFolderKey),
-            isDirectory(URL(fileURLWithPath: path))
-        {
+        if let path = ui.folderPath, isDirectory(URL(fileURLWithPath: path)) {
             open(folder: URL(fileURLWithPath: path))
         } else {
-            promptForFolder()
+            // A modal panel run from onAppear keeps the window from showing, and can open behind other apps
+            DispatchQueue.main.async {
+                NSApp.activate()
+                self.promptForFolder()
+            }
         }
     }
 
@@ -148,10 +144,9 @@ final class Workspace: ObservableObject {
         if panel == .terminal {
             startShell(in: folder)
         }
-        UserDefaults.standard.set(folder.path, forKey: Self.lastFolderKey)
+        ui.folderPath = folder.path
 
-        let lastFiles = UserDefaults.standard.dictionary(forKey: Self.lastFilesKey) as? [String: String]
-        if let path = lastFiles?[folder.path], FileManager.default.fileExists(atPath: path),
+        if let path = ui.filePaths[folder.path], FileManager.default.fileExists(atPath: path),
             !isDirectory(URL(fileURLWithPath: path))
         {
             load(URL(fileURLWithPath: path))
@@ -262,9 +257,7 @@ final class Workspace: ObservableObject {
         clearEditor()
         selectedFile = url
         if let root {
-            var lastFiles = UserDefaults.standard.dictionary(forKey: Self.lastFilesKey) as? [String: String] ?? [:]
-            lastFiles[root.url.path] = url.path
-            UserDefaults.standard.set(lastFiles, forKey: Self.lastFilesKey)
+            ui.filePaths[root.url.path] = url.path
         }
         document = Document(url: url)
         if document == nil {
