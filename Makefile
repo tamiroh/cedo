@@ -45,7 +45,7 @@ open: app
 .PHONY: install
 install: app
 	rm -rf $(INSTALL_DIR)/cedo.app
-	cp -R $(APP) $(INSTALL_DIR)/
+	mv $(APP) $(INSTALL_DIR)/
 
 .PHONY: clean
 clean:
