@@ -2,6 +2,12 @@
 
 A “minimal” text editor for macOS.
 
+## Concept
+
+- **For writing** — Made for long-form text, not code.
+- **Plain files, quiet history** — Files stay plain text in a folder. Git keeps their history behind the scenes, and the folder remains a normal repository other tools can use.
+- **Terminal alongside** — Covers what the editor can't do yet, and is a place to consult coding agents while you write.
+
 ## Requirements
 
 - macOS 14 or later
