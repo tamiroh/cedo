@@ -53,30 +53,33 @@ struct ContentView: View {
 
     @ViewBuilder
     private var main: some View {
+        let margin = CodeTextView.textInset.width
         VStack(alignment: .leading, spacing: 0) {
             if let file = workspace.selectedFile {
                 header(for: file)
+                    .padding(.horizontal, margin)
                 if showsHistory {
                     HistoryView(file: file, refreshKey: workspace.historyVersion)
                         .id(file)
+                        .padding([.horizontal, .bottom], margin)
+                        .padding(.top, 12)
                 } else if let message = workspace.errorMessage {
                     Text(message)
                         .font(.system(size: 14))
                         .foregroundStyle(Theme.muted)
+                        .padding(.horizontal, margin)
+                        .padding(.top, 12)
                 } else {
                     CodeTextView(text: workspace.text, document: file, onChange: workspace.textDidChange)
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
-                        .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Theme.border))
                 }
             } else {
                 Text(workspace.root == nil ? "No folder open. Press ⌘O to open one." : "No file selected.")
                     .font(.system(size: 14))
                     .foregroundStyle(Theme.muted)
+                    .padding(.horizontal, margin)
             }
         }
         .padding(.top, 36)
-        .padding(.horizontal, 32)
-        .padding(.bottom, 24)
     }
 
     /// The terminal's left border, which can be dragged to resize the panel.
@@ -125,7 +128,7 @@ struct ContentView: View {
             }
             .padding(.leading, 8)
         }
-        .padding(.bottom, 24)
+        .padding(.bottom, 12)
     }
 
     private func tab(_ title: String, isActive: Bool, action: @escaping () -> Void) -> some View {

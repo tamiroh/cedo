@@ -8,6 +8,9 @@ struct CodeTextView: NSViewRepresentable {
     let document: URL
     let onChange: (String) -> Void
 
+    /// Views above the text use the same horizontal inset to line up with it.
+    static let textInset = NSSize(width: 32, height: 12)
+
     private static let attributes: [NSAttributedString.Key: Any] = {
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineSpacing = 5
@@ -22,16 +25,16 @@ struct CodeTextView: NSViewRepresentable {
 
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSTextView.scrollableTextView()
-        scrollView.backgroundColor = NSColor(Theme.inset)
+        scrollView.backgroundColor = NSColor(Theme.background)
         let textView = scrollView.documentView as! NSTextView
         textView.delegate = context.coordinator
         textView.isRichText = false
         textView.allowsUndo = true
-        textView.backgroundColor = NSColor(Theme.inset)
+        textView.backgroundColor = NSColor(Theme.background)
         textView.insertionPointColor = NSColor(Theme.text)
         textView.selectedTextAttributes = [.backgroundColor: NSColor(Theme.selection)]
         textView.typingAttributes = Self.attributes
-        textView.textContainerInset = NSSize(width: 12, height: 12)
+        textView.textContainerInset = Self.textInset
         textView.textContainer?.lineFragmentPadding = 0
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticDashSubstitutionEnabled = false
