@@ -6,6 +6,9 @@ struct ContentView: View {
     @State private var dragStartWidth: CGFloat?
     @State private var showsHistory = false
 
+    /// The header row, shared by the editor and the panel so their tabs line up.
+    private static let headerHeight: CGFloat = 24
+
     var body: some View {
         HStack(spacing: 0) {
             sidebar
@@ -89,6 +92,7 @@ struct ContentView: View {
                     .disabled(workspace.root == nil)
                 tab("Log", isActive: panel == .log) { workspace.show(.log) }
             }
+            .frame(height: Self.headerHeight)
             switch panel {
             case .terminal:
                 if let shell = workspace.shell {
@@ -126,15 +130,17 @@ struct ContentView: View {
     }
 
     private func header(for file: URL) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Text(file.lastPathComponent)
-                .font(.system(size: 16, weight: .semibold))
-                .lineLimit(1)
-            Text(directory(of: file))
-                .font(.system(size: 12))
-                .foregroundStyle(Theme.muted)
-                .lineLimit(1)
-                .truncationMode(.head)
+        HStack(spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(file.lastPathComponent)
+                    .font(.system(size: 16, weight: .semibold))
+                    .lineLimit(1)
+                Text(directory(of: file))
+                    .font(.system(size: 12))
+                    .foregroundStyle(Theme.muted)
+                    .lineLimit(1)
+                    .truncationMode(.head)
+            }
             Spacer(minLength: 16)
             if workspace.saveFailed {
                 Text("Couldn't save")
@@ -147,6 +153,7 @@ struct ContentView: View {
             }
             .padding(.leading, 8)
         }
+        .frame(height: Self.headerHeight)
         .padding(.bottom, 12)
     }
 
