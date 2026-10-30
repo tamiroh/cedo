@@ -52,17 +52,20 @@ final class Workspace: ObservableObject {
         autoCommitter.onCommit = { [weak self] in self?.historyVersion += 1 }
 
         let center = NotificationCenter.default
-        center.addObserver(forName: NSApplication.willResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
+        center.addObserver(forName: NSApplication.willResignActiveNotification, object: nil, queue: .main) {
+            [weak self] _ in
             MainActor.assumeIsolated { self?.save() }
         }
-        center.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
+        center.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) {
+            [weak self] _ in
             MainActor.assumeIsolated {
                 self?.save()
                 // Make sure the last edits are committed before the app exits
                 self?.autoCommitter.flushAndWait()
             }
         }
-        outsideChangeTimer = Timer.scheduledTimer(withTimeInterval: Self.outsideChangeInterval, repeats: true) { [weak self] _ in
+        outsideChangeTimer = Timer.scheduledTimer(withTimeInterval: Self.outsideChangeInterval, repeats: true) {
+            [weak self] _ in
             MainActor.assumeIsolated { self?.checkForOutsideChanges() }
         }
     }
@@ -101,7 +104,8 @@ final class Workspace: ObservableObject {
     func restoreOrPrompt() {
         guard root == nil else { return }
         if let path = UserDefaults.standard.string(forKey: Self.lastFolderKey),
-           isDirectory(URL(fileURLWithPath: path)) {
+            isDirectory(URL(fileURLWithPath: path))
+        {
             open(folder: URL(fileURLWithPath: path))
         } else {
             promptForFolder()

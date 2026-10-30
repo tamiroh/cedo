@@ -32,7 +32,8 @@ public struct Document: Equatable {
     public mutating func save(overwritingOutsideChanges: Bool = false) throws -> SaveResult {
         guard isDirty else { return .unchanged }
         if !overwritingOutsideChanges,
-           let onDisk = try? String(contentsOf: url, encoding: .utf8), onDisk != savedText {
+            let onDisk = try? String(contentsOf: url, encoding: .utf8), onDisk != savedText
+        {
             return .conflict(onDisk: onDisk)
         }
         try text.write(to: url, atomically: true, encoding: .utf8)
@@ -45,7 +46,8 @@ public struct Document: Equatable {
     public mutating func checkForOutsideChanges() -> OutsideChange {
         let date = Self.modificationDate(of: url)
         guard date != savedModificationDate,
-              let onDisk = try? String(contentsOf: url, encoding: .utf8) else { return .unchanged }
+            let onDisk = try? String(contentsOf: url, encoding: .utf8)
+        else { return .unchanged }
         guard onDisk != savedText else {
             savedModificationDate = date
             return .unchanged

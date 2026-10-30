@@ -26,8 +26,10 @@ public struct Textlint {
     public init?(root: URL) {
         let fileManager = FileManager.default
         let executable = root.appendingPathComponent("node_modules/.bin/textlint")
-        guard Self.configNames.contains(where: { fileManager.fileExists(atPath: root.appendingPathComponent($0).path) }),
-              fileManager.isExecutableFile(atPath: executable.path) else { return nil }
+        guard
+            Self.configNames.contains(where: { fileManager.fileExists(atPath: root.appendingPathComponent($0).path) }),
+            fileManager.isExecutableFile(atPath: executable.path)
+        else { return nil }
         self.root = root
         self.executable = executable
     }

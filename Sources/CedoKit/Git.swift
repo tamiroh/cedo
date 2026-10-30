@@ -21,9 +21,11 @@ public enum Git {
     /// Commits that touched the file, newest first, following renames.
     public static func history(of file: URL) async throws -> [Commit] {
         let output = try await run(
-            ["log", "--follow", "--no-color", "--name-only",
-             "--format=%x1e%H%x1f%h%x1f%an%x1f%ar%x1f%s",
-             "--", file.lastPathComponent],
+            [
+                "log", "--follow", "--no-color", "--name-only",
+                "--format=%x1e%H%x1f%h%x1f%an%x1f%ar%x1f%s",
+                "--", file.lastPathComponent,
+            ],
             in: file.deletingLastPathComponent()
         )
         return output.split(separator: "\u{1e}").compactMap { record in

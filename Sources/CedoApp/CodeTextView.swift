@@ -149,7 +149,9 @@ struct CodeTextView: NSViewRepresentable {
             _ textStorage: NSTextStorage, didProcessEditing editedMask: NSTextStorageEditActions,
             range editedRange: NSRange, changeInLength delta: Int
         ) {
-            guard editedMask.contains(.editedCharacters), let layoutManager, !layoutManager.marks.isEmpty else { return }
+            guard editedMask.contains(.editedCharacters), let layoutManager, !layoutManager.marks.isEmpty else {
+                return
+            }
             let oldEnd = NSMaxRange(editedRange) - delta
             layoutManager.marks = layoutManager.marks.compactMap { mark in
                 if NSMaxRange(mark.range) <= editedRange.location {
@@ -185,7 +187,8 @@ struct CodeTextView: NSViewRepresentable {
             for mark in layoutManager.marks {
                 let glyphs = layoutManager.glyphRange(forCharacterRange: mark.range, actualCharacterRange: nil)
                 layoutManager.enumerateEnclosingRects(
-                    forGlyphRange: glyphs, withinSelectedGlyphRange: NSRange(location: NSNotFound, length: 0), in: container
+                    forGlyphRange: glyphs, withinSelectedGlyphRange: NSRange(location: NSNotFound, length: 0),
+                    in: container
                 ) { rect, _ in
                     let tag = textView.addToolTip(rect.offsetBy(dx: origin.x, dy: origin.y), owner: self, userData: nil)
                     self.toolTips[tag] = mark.message
@@ -193,7 +196,10 @@ struct CodeTextView: NSViewRepresentable {
             }
         }
 
-        func view(_ view: NSView, stringForToolTip tag: NSView.ToolTipTag, point: NSPoint, userData data: UnsafeMutableRawPointer?) -> String {
+        func view(
+            _ view: NSView, stringForToolTip tag: NSView.ToolTipTag, point: NSPoint,
+            userData data: UnsafeMutableRawPointer?
+        ) -> String {
             toolTips[tag] ?? ""
         }
     }

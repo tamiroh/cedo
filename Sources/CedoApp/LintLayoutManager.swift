@@ -14,7 +14,8 @@ final class LintLayoutManager: NSLayoutManager {
     override func drawGlyphs(forGlyphRange glyphsToShow: NSRange, at origin: NSPoint) {
         super.drawGlyphs(forGlyphRange: glyphsToShow, at: origin)
         for mark in marks {
-            let glyphs = NSIntersectionRange(glyphRange(forCharacterRange: mark.range, actualCharacterRange: nil), glyphsToShow)
+            let glyphs = NSIntersectionRange(
+                glyphRange(forCharacterRange: mark.range, actualCharacterRange: nil), glyphsToShow)
             guard glyphs.length > 0 else { continue }
             NSColor(mark.isError ? Theme.danger : Theme.warning).setStroke()
             enumerateLineFragments(forGlyphRange: glyphs) { lineRect, _, container, lineGlyphs, _ in

@@ -1,6 +1,6 @@
+import CedoKit
 import Foundation
 import Testing
-import CedoKit
 
 struct DocumentTests {
     let file: URL
@@ -66,7 +66,8 @@ struct DocumentTests {
 
     @Test func ignoresATouchThatKeepsTheContent() throws {
         var document = try #require(Document(url: file))
-        try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: 60)], ofItemAtPath: file.path)
+        try FileManager.default.setAttributes(
+            [.modificationDate: Date(timeIntervalSinceNow: 60)], ofItemAtPath: file.path)
 
         #expect(document.checkForOutsideChanges() == .unchanged)
         #expect(!document.isDirty)

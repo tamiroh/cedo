@@ -14,6 +14,14 @@ run:
 test:
 	swift test
 
+.PHONY: format
+format:
+	swift format format --in-place --recursive Package.swift Sources Tests
+
+.PHONY: lint
+lint:
+	swift format lint --strict --recursive Package.swift Sources Tests
+
 .PHONY: app
 app:
 	swift build -c release

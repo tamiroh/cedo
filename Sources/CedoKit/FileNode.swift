@@ -17,11 +17,12 @@ public final class FileNode: Identifiable, Hashable {
     /// Child nodes (directories first, then by name) for a directory, or nil for a file.
     public lazy var children: [FileNode]? = {
         guard isDirectory else { return nil }
-        let urls = (try? FileManager.default.contentsOfDirectory(
-            at: url,
-            includingPropertiesForKeys: [.isDirectoryKey],
-            options: [.skipsHiddenFiles]
-        )) ?? []
+        let urls =
+            (try? FileManager.default.contentsOfDirectory(
+                at: url,
+                includingPropertiesForKeys: [.isDirectoryKey],
+                options: [.skipsHiddenFiles]
+            )) ?? []
         return urls.map(FileNode.init).sorted {
             if $0.isDirectory != $1.isDirectory { return $0.isDirectory }
             return $0.name.localizedStandardCompare($1.name) == .orderedAscending
