@@ -71,7 +71,7 @@ struct CodeTextView: NSViewRepresentable {
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         context.coordinator.onChange = onChange
-        let textView = scrollView.documentView as! NSTextView
+        guard let textView = context.coordinator.textView else { return }
         let isNewDocument = context.coordinator.document != document
         context.coordinator.document = document
         if isNewDocument {
