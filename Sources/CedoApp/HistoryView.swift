@@ -154,33 +154,75 @@ private struct CommitRow: View {
 }
 
 private struct DiffText: View {
-    let text: String
+    let diff: Diff
+
+    init(text: String) {
+        diff = Diff(parsing: text)
+    }
+
+    private enum Row {
+        case hunk(line: Int, isFirst: Bool)
+        case line(Diff.Line)
+    }
+
+    /// One flat list, so every row has its own position as its identity.
+    private var rows: [Row] {
+        diff.hunks.enumerated().flatMap { index, hunk in
+            [Row.hunk(line: hunk.line, isFirst: index == 0)] + hunk.lines.map(Row.line)
+        }
+    }
 
     var body: some View {
-        let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
-        ScrollView([.vertical, .horizontal]) {
+        let rows = rows
+        ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                ForEach(lines.indices, id: \.self) { index in
-                    let line = lines[index]
-                    Text(line.isEmpty ? " " : String(line))
-                        .font(.system(size: 13, design: .monospaced))
-                        .foregroundStyle(color(for: line))
-                        .frame(minHeight: 20, alignment: .leading)
-                        .fixedSize()
+                ForEach(rows.indices, id: \.self) { index in
+                    switch rows[index] {
+                    case .hunk(let line, let isFirst):
+                        Text("Line \(line)")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Theme.muted)
+                            .padding(.top, isFirst ? 0 : 16)
+                            .padding(.bottom, 4)
+                            .padding(.horizontal, 12)
+                    case .line(let line):
+                        self.line(line)
+                    }
                 }
             }
-            .padding(12)
+            .padding(.vertical, 12)
             .textSelection(.enabled)
         }
     }
 
-    private func color(for line: Substring) -> Color {
-        if line.hasPrefix("+++") || line.hasPrefix("---") || line.hasPrefix("diff ") || line.hasPrefix("index ") {
-            return Theme.muted
+    private func line(_ line: Diff.Line) -> some View {
+        Text(attributed(line))
+            .font(.system(size: 13, design: .monospaced))
+            .foregroundStyle(line.kind == .context ? Theme.muted : Theme.text)
+            .lineSpacing(3)
+            .padding(.vertical, 2)
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(tint(of: line).opacity(0.12))
+            .overlay(alignment: .leading) {
+                Rectangle().fill(tint(of: line)).frame(width: 2)
+            }
+    }
+
+    private func attributed(_ line: Diff.Line) -> AttributedString {
+        let characters = Array(line.text.isEmpty ? " " : line.text)
+        guard let changed = line.changed else { return AttributedString(String(characters)) }
+        var middle = AttributedString(String(characters[changed]))
+        middle.backgroundColor = tint(of: line).opacity(0.35)
+        return AttributedString(String(characters[..<changed.lowerBound])) + middle
+            + AttributedString(String(characters[changed.upperBound...]))
+    }
+
+    private func tint(of line: Diff.Line) -> Color {
+        switch line.kind {
+        case .context: .clear
+        case .added: Theme.added
+        case .removed: Theme.removed
         }
-        if line.hasPrefix("@@") { return Theme.hunk }
-        if line.hasPrefix("+") { return Theme.added }
-        if line.hasPrefix("-") { return Theme.removed }
-        return Theme.text
     }
 }

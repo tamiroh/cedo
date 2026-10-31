@@ -13,7 +13,6 @@ enum Theme {
     static let warning = Color(hex: 0xe5c07b)
     static let added = Color(hex: 0xa8c98a)
     static let removed = danger
-    static let hunk = Color(hex: 0x8cb4f0)
 }
 
 extension Color {

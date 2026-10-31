@@ -75,15 +75,8 @@ enum EditSummary {
     }
 
     static func difference(_ old: String, _ new: String) -> (String, String) {
-        let old = Array(old)
-        let new = Array(new)
-        var start = 0
-        while start < min(old.count, new.count), old[start] == new[start] { start += 1 }
-        var end = 0
-        while end < min(old.count, new.count) - start, old[old.count - 1 - end] == new[new.count - 1 - end] {
-            end += 1
-        }
-        return (String(old[start..<old.count - end]), String(new[start..<new.count - end]))
+        let ranges = Diff.changedRanges(old, new)
+        return (String(Array(old)[ranges.old]), String(Array(new)[ranges.new]))
     }
 
     static func text(of edits: [Edit]) -> String {
