@@ -36,6 +36,17 @@ public final class AutoCommitter {
 
     /// Commits everything saved so far.
     public func flush() {
+        flush(summarizing: true)
+    }
+
+    /// Commits everything saved so far and waits until the commits are done. Skips the generated summary,
+    /// so quitting never waits on the model.
+    public func flushAndWait() {
+        flush(summarizing: false)
+        queue.sync {}
+    }
+
+    private func flush(summarizing: Bool) {
         idleTimer?.cancel()
         idleTimer = nil
         guard !pending.isEmpty else { return }
@@ -44,16 +55,10 @@ public final class AutoCommitter {
         let onCommit = onCommit
         let log = log
         queue.async {
-            if Self.commit(files, log: log) {
+            if Self.commit(files, summarizing: summarizing, log: log) {
                 DispatchQueue.main.async { onCommit?() }
             }
         }
-    }
-
-    /// Commits everything saved so far and waits until the commits are done.
-    public func flushAndWait() {
-        flush()
-        queue.sync {}
     }
 
     private func restartIdleTimer() {
@@ -64,7 +69,7 @@ public final class AutoCommitter {
     }
 
     /// Commits the files, one commit per repository. Returns true if any commit was made.
-    private static func commit(_ files: Set<URL>, log: DebugLog) -> Bool {
+    private static func commit(_ files: Set<URL>, summarizing: Bool, log: DebugLog) -> Bool {
         let byRepository = Dictionary(grouping: files) { try? Git.topLevel(of: $0) }
         var committed = false
         for (repository, files) in byRepository {
@@ -73,7 +78,8 @@ public final class AutoCommitter {
                 continue
             }
             do {
-                if let message = try commit(files.sorted { $0.path < $1.path }, in: repository) {
+                let sorted = files.sorted { $0.path < $1.path }
+                if let message = try commit(sorted, in: repository, summarizing: summarizing) {
                     log.info("Committed in \(repository.lastPathComponent): \(message.prefix { $0 != "\n" })")
                     committed = true
                 } else {
@@ -91,7 +97,7 @@ public final class AutoCommitter {
     }
 
     /// Returns the commit message, or nil if no file differs from HEAD.
-    private static func commit(_ files: [URL], in repository: URL) throws -> String? {
+    private static func commit(_ files: [URL], in repository: URL, summarizing: Bool) throws -> String? {
         var changes: [Change] = []
         for file in files {
             let old = Git.headVersion(of: file) ?? ""
@@ -103,7 +109,12 @@ public final class AutoCommitter {
         let paths = changes.map(\.file.path)
         // `add` picks up new files; `--only` keeps anything else the user has staged out of this commit
         try Git.runSync(["add", "--"] + paths, in: repository)
-        let message = message(for: changes)
+        var summary: String?
+        if summarizing {
+            let diff = try Git.runSync(["diff", "--cached", "--no-color", "-U0", "--"] + paths, in: repository)
+            summary = EditSummary.describe(diff: diff)
+        }
+        let message = message(for: changes, summary: summary)
         try Git.runSync(["commit", "--quiet", "--only", "-m", message, "--"] + paths, in: repository)
         return message
     }
@@ -113,11 +124,14 @@ public final class AutoCommitter {
         let characterDelta: Int
     }
 
-    /// The commit message. Kept separate so it can later be replaced by a generated summary.
-    static func message(for changes: [Change]) -> String {
+    /// The summary, if there is one, followed by the files and how much each grew or shrank.
+    static func message(for changes: [Change], summary: String? = nil) -> String {
         func describe(_ change: Change) -> String {
             let sign = change.characterDelta < 0 ? "-" : "+"
             return "\(change.file.lastPathComponent) (\(sign)\(abs(change.characterDelta)) chars)"
+        }
+        if let summary {
+            return summary + "\n\n" + changes.map { "- " + describe($0) }.joined(separator: "\n")
         }
         if changes.count == 1 {
             return "Edit " + describe(changes[0])
