@@ -116,10 +116,19 @@ private struct CommitRow: View {
                     .font(.system(size: 13))
                     .foregroundStyle(Theme.text)
                     .lineLimit(1)
-                Text(Self.timestamp(of: commit.date))
-                    .font(.system(size: 12))
-                    .foregroundStyle(Theme.muted)
-                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Text(Self.timestamp(of: commit.date))
+                        .foregroundStyle(Theme.muted)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                    if commit.added > 0 {
+                        Text("+\(commit.added)").foregroundStyle(Theme.added)
+                    }
+                    if commit.removed > 0 {
+                        Text("−\(commit.removed)").foregroundStyle(Theme.removed)
+                    }
+                }
+                .font(.system(size: 12).monospacedDigit())
             }
             .padding(.vertical, 6)
             .padding(.horizontal, 8)

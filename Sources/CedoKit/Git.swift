@@ -4,6 +4,9 @@ public struct Commit: Identifiable, Hashable {
     public let hash: String
     public let date: Date
     public let subject: String
+    /// Characters added and removed in the file, ignoring whitespace.
+    public let added: Int
+    public let removed: Int
     /// The file's path at this commit, relative to the repository root.
     public let path: String
 
@@ -20,7 +23,7 @@ public enum Git {
     public static func history(of file: URL) async throws -> [Commit] {
         let output = try await run(
             [
-                "log", "--follow", "--no-color", "--name-only",
+                "log", "--follow", "--no-color", "--patch", "--unified=0",
                 "--format=%x1e%H%x1f%at%x1f%s",
                 "--", file.lastPathComponent,
             ],
@@ -28,12 +31,45 @@ public enum Git {
         )
         return output.split(separator: "\u{1e}").compactMap { record in
             let lines = record.split(separator: "\n")
-            guard let header = lines.first, let path = lines.dropFirst().first else { return nil }
+            guard let header = lines.first, let path = path(inPatch: lines.dropFirst()) else { return nil }
             let fields = header.split(separator: "\u{1f}", omittingEmptySubsequences: false).map(String.init)
             guard fields.count == 3, let seconds = TimeInterval(fields[1]) else { return nil }
+            let size = size(of: EditSummary.edits(in: lines.dropFirst().joined(separator: "\n")))
             return Commit(
-                hash: fields[0], date: Date(timeIntervalSince1970: seconds), subject: fields[2], path: String(path)
+                hash: fields[0], date: Date(timeIntervalSince1970: seconds), subject: fields[2],
+                added: size.added, removed: size.removed, path: path
             )
+        }
+    }
+
+    /// The file's path after the change, from a patch's headers.
+    static func path(inPatch lines: some Sequence<Substring>) -> String? {
+        var path: String?
+        for line in lines {
+            if line.hasPrefix("+++ b/") {
+                return String(line.dropFirst(6)).trimmingCharacters(in: CharacterSet(charactersIn: "\t"))
+            } else if line.hasPrefix("rename to ") {
+                path = String(line.dropFirst(10))
+            } else if line.hasPrefix("--- a/"), path == nil {
+                path = String(line.dropFirst(6)).trimmingCharacters(in: CharacterSet(charactersIn: "\t"))
+            } else if line.hasPrefix("@@") {
+                break
+            }
+        }
+        return path
+    }
+
+    /// Counts only the changed part of a rewritten line, so fixing one character in a paragraph counts as one.
+    static func size(of edits: [EditSummary.Edit]) -> (added: Int, removed: Int) {
+        edits.reduce(into: (added: 0, removed: 0)) { size, edit in
+            switch edit {
+            case .rewritten(let old, let new):
+                let (removed, added) = EditSummary.difference(old, new)
+                size.removed += removed.count
+                size.added += added.count
+            case .removed(let text): size.removed += text.count
+            case .added(let text): size.added += text.count
+            }
         }
     }
 
