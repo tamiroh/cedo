@@ -27,81 +27,19 @@ struct CodeTextView: NSViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(onChange: onChange) }
 
     func makeNSView(context: Context) -> NSScrollView {
-        // Built by hand on TextKit 1, because the lint marks are drawn by the layout manager
-        let textStorage = NSTextStorage()
-        let layoutManager = LintLayoutManager()
-        textStorage.addLayoutManager(layoutManager)
-        let textContainer = NSTextContainer(size: NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude))
-        textContainer.widthTracksTextView = true
-        layoutManager.addTextContainer(textContainer)
-        let textView = NSTextView(frame: .zero, textContainer: textContainer)
-        textView.minSize = .zero
-        textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
-        textView.isVerticallyResizable = true
-        textView.autoresizingMask = .width
-
-        let scrollView = NSScrollView()
-        scrollView.hasVerticalScroller = true
-        scrollView.documentView = textView
-        scrollView.backgroundColor = NSColor(Theme.background)
-
-        textView.delegate = context.coordinator
-        textStorage.delegate = context.coordinator
-        context.coordinator.textView = textView
-        textView.postsFrameChangedNotifications = true
-        NotificationCenter.default.addObserver(
-            context.coordinator, selector: #selector(Coordinator.frameDidChange),
-            name: NSView.frameDidChangeNotification, object: textView
-        )
-        textView.isRichText = false
-        textView.allowsUndo = true
-        textView.backgroundColor = NSColor(Theme.background)
-        textView.insertionPointColor = NSColor(Theme.text)
-        textView.selectedTextAttributes = [.backgroundColor: NSColor(Theme.selection)]
-        textView.typingAttributes = Self.attributes
-        textView.textContainerInset = Self.textInset
-        textView.textContainer?.lineFragmentPadding = 0
-        textView.isAutomaticQuoteSubstitutionEnabled = false
-        textView.isAutomaticDashSubstitutionEnabled = false
-        textView.isAutomaticTextReplacementEnabled = false
-        textView.isAutomaticSpellingCorrectionEnabled = false
-        textView.isContinuousSpellCheckingEnabled = false
-        setText(text, in: textView)
-        context.coordinator.document = document
-        return scrollView
+        context.coordinator.makeScrollView(text: text, document: document)
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         context.coordinator.onChange = onChange
-        guard let textView = context.coordinator.textView else { return }
-        if textView.textContainerInset.width != horizontalInset {
-            textView.textContainerInset = NSSize(width: horizontalInset, height: Self.textInset.height)
-            context.coordinator.setNeedsToolTips()
-        }
-        let isNewDocument = context.coordinator.document != document
-        context.coordinator.document = document
-        if isNewDocument {
-            setText(text, in: textView)
-            textView.undoManager?.removeAllActions()
-            textView.scrollToBeginningOfDocument(nil)
-            context.coordinator.clearMarks()
-        } else if textView.string != text, !textView.hasMarkedText() {
-            // Only an outside change makes these differ, apart from text still being composed in an input method
-            let selection = textView.selectedRange()
-            let origin = scrollView.contentView.bounds.origin
-            setText(text, in: textView)
-            textView.undoManager?.removeAllActions()
-            let length = (text as NSString).length
-            textView.setSelectedRange(NSRange(location: min(selection.location, length), length: 0))
-            scrollView.contentView.scroll(to: origin)
-            scrollView.reflectScrolledClipView(scrollView.contentView)
-        }
-        context.coordinator.show(lint, for: document)
-        context.coordinator.applyHighlights(of: configuration)
+        context.coordinator.update(
+            text: text, document: document, lint: lint, configuration: configuration,
+            horizontalInset: horizontalInset
+        )
     }
 
-    private func setText(_ text: String, in textView: NSTextView) {
-        textView.textStorage?.setAttributedString(NSAttributedString(string: text, attributes: Self.attributes))
+    private static func setText(_ text: String, in textView: NSTextView) {
+        textView.textStorage?.setAttributedString(NSAttributedString(string: text, attributes: attributes))
     }
 
     @MainActor
@@ -120,6 +58,83 @@ struct CodeTextView: NSViewRepresentable {
         private var layoutManager: LintLayoutManager? { textView?.layoutManager as? LintLayoutManager }
 
         init(onChange: @escaping (String) -> Void) { self.onChange = onChange }
+
+        func makeScrollView(text: String, document: URL) -> NSScrollView {
+            // Built by hand on TextKit 1, because the lint marks are drawn by the layout manager
+            let textStorage = NSTextStorage()
+            let layoutManager = LintLayoutManager()
+            textStorage.addLayoutManager(layoutManager)
+            let textContainer = NSTextContainer(size: NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude))
+            textContainer.widthTracksTextView = true
+            layoutManager.addTextContainer(textContainer)
+            let textView = NSTextView(frame: .zero, textContainer: textContainer)
+            textView.minSize = .zero
+            textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+            textView.isVerticallyResizable = true
+            textView.autoresizingMask = .width
+
+            let scrollView = NSScrollView()
+            scrollView.hasVerticalScroller = true
+            scrollView.documentView = textView
+            scrollView.backgroundColor = NSColor(Theme.background)
+
+            textView.delegate = self
+            textStorage.delegate = self
+            self.textView = textView
+            textView.postsFrameChangedNotifications = true
+            NotificationCenter.default.addObserver(
+                self, selector: #selector(frameDidChange),
+                name: NSView.frameDidChangeNotification, object: textView
+            )
+            textView.isRichText = false
+            textView.allowsUndo = true
+            textView.backgroundColor = NSColor(Theme.background)
+            textView.insertionPointColor = NSColor(Theme.text)
+            textView.selectedTextAttributes = [.backgroundColor: NSColor(Theme.selection)]
+            textView.typingAttributes = CodeTextView.attributes
+            textView.textContainerInset = CodeTextView.textInset
+            textView.textContainer?.lineFragmentPadding = 0
+            textView.isAutomaticQuoteSubstitutionEnabled = false
+            textView.isAutomaticDashSubstitutionEnabled = false
+            textView.isAutomaticTextReplacementEnabled = false
+            textView.isAutomaticSpellingCorrectionEnabled = false
+            textView.isContinuousSpellCheckingEnabled = false
+            CodeTextView.setText(text, in: textView)
+            self.document = document
+            return scrollView
+        }
+
+        func update(
+            text: String, document: URL, lint: Workspace.Lint?, configuration: Configuration?,
+            horizontalInset: CGFloat
+        ) {
+            guard let textView, let scrollView = textView.enclosingScrollView else { return }
+            if textView.textContainerInset.width != horizontalInset {
+                textView.textContainerInset = NSSize(width: horizontalInset, height: CodeTextView.textInset.height)
+                setNeedsToolTips()
+            }
+            let isNewDocument = self.document != document
+            self.document = document
+            if isNewDocument {
+                CodeTextView.setText(text, in: textView)
+                textView.undoManager?.removeAllActions()
+                textView.setSelectedRange(NSRange(location: 0, length: 0))
+                textView.scrollToBeginningOfDocument(nil)
+                clearMarks()
+            } else if textView.string != text, !textView.hasMarkedText() {
+                // Only an outside change makes these differ, apart from text still being composed in an input method
+                let selection = textView.selectedRange()
+                let origin = scrollView.contentView.bounds.origin
+                CodeTextView.setText(text, in: textView)
+                textView.undoManager?.removeAllActions()
+                let length = (text as NSString).length
+                textView.setSelectedRange(NSRange(location: min(selection.location, length), length: 0))
+                scrollView.contentView.scroll(to: origin)
+                scrollView.reflectScrolledClipView(scrollView.contentView)
+            }
+            show(lint, for: document)
+            applyHighlights(of: configuration)
+        }
 
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }

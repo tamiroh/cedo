@@ -25,5 +25,10 @@ let package = Package(
             dependencies: ["CedoKit"],
             path: "Tests/CedoKitTests"
         ),
+        .testTarget(
+            name: "CedoAppTests",
+            dependencies: ["CedoApp", "CedoKit"],
+            path: "Tests/CedoAppTests"
+        ),
     ]
 )
