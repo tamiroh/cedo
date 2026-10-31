@@ -7,6 +7,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillFinishLaunching(_ notification: Notification) {
         // The UI is dark-only, so dialogs and scrollers should match
         NSApp.appearance = NSAppearance(named: .darkAqua)
+        // Lint messages show on hover, so wait about as long as VS Code instead of the system's second or so
+        UserDefaults.standard.register(defaults: ["NSInitialToolTipDelay": 300])
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
