@@ -143,6 +143,37 @@ final class Workspace: ObservableObject {
         select(file)
     }
 
+    func newProject() {
+        let panel = NSSavePanel()
+        panel.title = "New Project"
+        panel.nameFieldLabel = "Project Name:"
+        panel.nameFieldStringValue = "Untitled"
+        panel.prompt = "Create"
+        guard panel.runModal() == .OK, let folder = panel.url else { return }
+
+        let name = folder.lastPathComponent
+        do {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
+        } catch {
+            showAlert(
+                FileManager.default.fileExists(atPath: folder.path)
+                    ? "\(name) already exists." : "Couldn't create \(name): \(error.localizedDescription)")
+            return
+        }
+        do {
+            try Git.createRepository(in: folder)
+        } catch {
+            log.error("Couldn't set up history in \(folder.path): \(error.localizedDescription)")
+            showAlert("Created \(name), but couldn't set it up to keep history: \(error.localizedDescription)")
+            return
+        }
+        log.info("Created project \(folder.path)")
+        open(folder: folder)
+        if root?.url == folder {
+            newFile()
+        }
+    }
+
     private func showAlert(_ message: String) {
         let alert = NSAlert()
         alert.messageText = message

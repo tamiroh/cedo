@@ -47,6 +47,8 @@ struct CedoApp: App {
                 Button("New File…") { workspace.newFile() }
                     .keyboardShortcut("n")
                     .disabled(workspace.root == nil)
+                Button("New Project…") { workspace.newProject() }
+                    .keyboardShortcut("n", modifiers: [.command, .shift])
                 Button("Open Folder…") { workspace.promptForFolder() }
                     .keyboardShortcut("o")
             }

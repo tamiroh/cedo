@@ -76,6 +76,10 @@ public enum Git {
         )
     }
 
+    public static func createRepository(in folder: URL) throws {
+        try runSync(["init", "--quiet"], in: folder)
+    }
+
     static func topLevel(of file: URL) throws -> URL {
         let path = try runSync(["rev-parse", "--show-toplevel"], in: file.deletingLastPathComponent())
         return URL(fileURLWithPath: path.trimmingCharacters(in: .whitespacesAndNewlines))

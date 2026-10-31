@@ -11,7 +11,7 @@ A “minimal” text editor for macOS.
 ## Requirements
 
 - macOS 14 or later
-- Xcode with Swift 5.10 or later
+- Xcode with Swift 6.0 or later
 - The Metal Toolchain, which the terminal library [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm) needs to build:
 
   ```sh

@@ -89,10 +89,13 @@ struct ContentView: View {
                     .overlay { columnHandles(margin: margin) }
                 }
             } else {
-                Text(workspace.root == nil ? "No folder open. Press ⌘O to open one." : "No file selected.")
-                    .font(.system(size: 14))
-                    .foregroundStyle(Theme.muted)
-                    .padding(.horizontal, margin)
+                Text(
+                    workspace.root == nil
+                        ? "No folder open. Press ⌘O to open one, or ⇧⌘N to create a project." : "No file selected."
+                )
+                .font(.system(size: 14))
+                .foregroundStyle(Theme.muted)
+                .padding(.horizontal, margin)
             }
         }
         .padding(.top, 36)
