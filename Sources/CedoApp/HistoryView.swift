@@ -115,7 +115,8 @@ private struct CommitRow: View {
                 Text(commit.subject)
                     .font(.system(size: 13))
                     .foregroundStyle(Theme.text)
-                    .lineLimit(1)
+                    .lineLimit(isSelected ? nil : 1)
+                    .fixedSize(horizontal: false, vertical: isSelected)
                 HStack(spacing: 6) {
                     Text(Self.timestamp(of: commit.date))
                         .foregroundStyle(Theme.muted)
