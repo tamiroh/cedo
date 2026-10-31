@@ -64,6 +64,20 @@ struct DocumentTests {
         #expect(!document.isDirty)
     }
 
+    @Test func stopsSavingWhenTheFileCannotBeRead() throws {
+        var document = try #require(Document(url: file))
+        document.text = "mine"
+
+        let utf16 = try #require("theirs".data(using: .utf16))
+        try utf16.write(to: file)
+        #expect(try document.save() == .unreadable)
+        #expect(try Data(contentsOf: file) == utf16)
+
+        try FileManager.default.removeItem(at: file)
+        #expect(try document.save() == .unreadable)
+        #expect(!FileManager.default.fileExists(atPath: file.path))
+    }
+
     @Test func ignoresATouchThatKeepsTheContent() throws {
         var document = try #require(Document(url: file))
         try FileManager.default.setAttributes(

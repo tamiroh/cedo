@@ -2,6 +2,8 @@ import AppKit
 import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    weak var workspace: Workspace?
+
     func applicationWillFinishLaunching(_ notification: Notification) {
         // The UI is dark-only, so dialogs and scrollers should match
         NSApp.appearance = NSAppearance(named: .darkAqua)
@@ -11,6 +13,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Behave as a regular foreground app even when launched via `swift run`
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        MainActor.assumeIsolated { workspace?.prepareToQuit() ?? true } ? .terminateNow : .terminateCancel
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -27,7 +33,10 @@ struct CedoApp: App {
         Window("cedo", id: "main") {
             ContentView()
                 .environmentObject(workspace)
-                .onAppear { workspace.restoreOrPrompt() }
+                .onAppear {
+                    appDelegate.workspace = workspace
+                    workspace.restoreOrPrompt()
+                }
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1100, height: 720)

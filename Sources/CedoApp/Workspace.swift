@@ -54,14 +54,6 @@ final class Workspace: ObservableObject {
             [weak self] _ in
             MainActor.assumeIsolated { self?.save() }
         }
-        center.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) {
-            [weak self] _ in
-            MainActor.assumeIsolated {
-                self?.save()
-                // Make sure the last edits are committed before the app exits
-                self?.autoCommitter.flushAndWait()
-            }
-        }
         outsideChangeTimer = Timer.scheduledTimer(withTimeInterval: Self.outsideChangeInterval, repeats: true) {
             [weak self] _ in
             MainActor.assumeIsolated {
@@ -69,6 +61,13 @@ final class Workspace: ObservableObject {
                 self?.reloadConfigurationIfChanged()
             }
         }
+    }
+
+    /// Saves and commits the last edits. Returns false if saving failed and the user chose to keep the app open.
+    func prepareToQuit() -> Bool {
+        guard saveBeforeLeaving() else { return false }
+        autoCommitter.flushAndWait()
+        return true
     }
 
     func toggle(_ panel: UIState.Panel) {
@@ -236,6 +235,11 @@ final class Workspace: ObservableObject {
                 autoCommitter.fileSaved(url)
             case .conflict(let onDisk):
                 resolveConflict(in: url, onDisk: onDisk)
+            case .unreadable:
+                if !saveFailed {
+                    log.error("Stopped saving \(url.lastPathComponent): it was deleted or is no longer UTF-8 text")
+                }
+                saveFailed = true
             case .unchanged, nil:
                 break
             }

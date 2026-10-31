@@ -6,6 +6,8 @@ public struct Document: Equatable {
         case saved
         case unchanged
         case conflict(onDisk: String)
+        /// The file was deleted or can no longer be read as UTF-8, so saving would replace what cedo never saw.
+        case unreadable
     }
 
     public enum OutsideChange: Equatable {
@@ -31,10 +33,11 @@ public struct Document: Equatable {
 
     public mutating func save(overwritingOutsideChanges: Bool = false) throws -> SaveResult {
         guard isDirty else { return .unchanged }
-        if !overwritingOutsideChanges,
-            let onDisk = try? String(contentsOf: url, encoding: .utf8), onDisk != savedText
-        {
-            return .conflict(onDisk: onDisk)
+        if !overwritingOutsideChanges {
+            guard let onDisk = try? String(contentsOf: url, encoding: .utf8) else { return .unreadable }
+            if onDisk != savedText {
+                return .conflict(onDisk: onDisk)
+            }
         }
         try text.write(to: url, atomically: true, encoding: .utf8)
         savedText = text
