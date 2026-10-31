@@ -89,8 +89,9 @@ struct CodeTextView: NSViewRepresentable {
             textView.undoManager?.removeAllActions()
             textView.scrollToBeginningOfDocument(nil)
             context.coordinator.clearMarks()
-        } else if textView.string != text {
-            // Typing keeps the two in sync, so a difference means the file was reloaded after an outside change
+        } else if textView.string != text, !textView.hasMarkedText() {
+            // Typing keeps the two in sync, so a difference means the file was reloaded after an outside change.
+            // Text still being composed in an input method isn't passed on yet, so it differs without that.
             let selection = textView.selectedRange()
             let origin = scrollView.contentView.bounds.origin
             setText(text, in: textView)
