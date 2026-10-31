@@ -1,6 +1,5 @@
 import Foundation
 
-/// A node in the file tree. Children are loaded the first time they are accessed.
 public final class FileNode: Identifiable, Hashable {
     public let url: URL
     public let isDirectory: Bool
@@ -16,7 +15,6 @@ public final class FileNode: Identifiable, Hashable {
         self.isDirectory = values?.isDirectory ?? false
     }
 
-    /// Child nodes (directories first, then by name) for a directory, or nil for a file.
     public lazy var children: [FileNode]? = {
         guard isDirectory else { return nil }
         let urls =
@@ -25,7 +23,6 @@ public final class FileNode: Identifiable, Hashable {
                 includingPropertiesForKeys: [.isDirectoryKey],
                 options: includesHiddenFiles ? [] : [.skipsHiddenFiles]
             )) ?? []
-        // .git stays out of sight even with hidden files shown
         return urls.filter { $0.lastPathComponent != ".git" }.map {
             FileNode(url: $0, includesHiddenFiles: includesHiddenFiles)
         }.sorted {

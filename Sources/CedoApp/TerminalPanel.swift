@@ -1,7 +1,6 @@
 import AppKit
 import SwiftUI
 
-/// Hosts the session's terminal view, which is reused across shows so the shell keeps running.
 struct TerminalPanel: NSViewRepresentable {
     let session: ShellSession
 

@@ -1,13 +1,10 @@
 import Foundation
 
-/// Commits saved files when the writer pauses, so each commit is roughly one burst of writing.
-///
 /// A pause is a few idle minutes after saving, switching to another file or folder, or quitting.
 /// Only files saved in cedo are committed; other changes in the repository are left alone.
 public final class AutoCommitter {
     private static let idleDelay: TimeInterval = 5 * 60
 
-    /// Called on the main thread after a commit has been made.
     public var onCommit: (() -> Void)?
 
     // Accessed on the main thread only
@@ -27,14 +24,12 @@ public final class AutoCommitter {
         restartIdleTimer()
     }
 
-    /// Typing pushes the pause further out, as long as something is waiting to be committed.
     public func textChanged() {
         if !pending.isEmpty {
             restartIdleTimer()
         }
     }
 
-    /// Commits everything saved so far.
     public func flush() {
         flush(summarizing: true)
     }
@@ -68,7 +63,6 @@ public final class AutoCommitter {
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.idleDelay, execute: timer)
     }
 
-    /// Commits the files, one commit per repository. Returns true if any commit was made.
     private static func commit(_ files: Set<URL>, summarizing: Bool, log: DebugLog) -> Bool {
         let byRepository = Dictionary(grouping: files) { try? Git.topLevel(of: $0) }
         var committed = false
@@ -96,7 +90,6 @@ public final class AutoCommitter {
         files.map(\.lastPathComponent).sorted().joined(separator: ", ")
     }
 
-    /// Returns the commit message, or nil if no file differs from HEAD.
     private static func commit(_ files: [URL], in repository: URL, summarizing: Bool) throws -> String? {
         var changes: [Change] = []
         for file in files {
@@ -124,7 +117,6 @@ public final class AutoCommitter {
         let characterDelta: Int
     }
 
-    /// The summary, if there is one, followed by the files and how much each grew or shrank.
     static func message(for changes: [Change], summary: String? = nil) -> String {
         func describe(_ change: Change) -> String {
             let sign = change.characterDelta < 0 ? "-" : "+"

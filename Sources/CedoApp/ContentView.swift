@@ -6,7 +6,6 @@ struct ContentView: View {
     @State private var editorWidth: CGFloat = 0
     @State private var columnDragStartWidth: CGFloat?
 
-    /// The header row, shared by the editor and the panel so their tabs line up.
     private static let headerHeight: CGFloat = 24
 
     var body: some View {
@@ -104,7 +103,6 @@ struct ContentView: View {
         }
     }
 
-    /// The space on each side of the text, which narrows it to the chosen number of characters per line.
     private var textMargin: CGFloat {
         let minimum = CodeTextView.textInset.width
         guard let columns = workspace.ui.textColumns else { return minimum }
@@ -112,7 +110,6 @@ struct ContentView: View {
         return max(minimum, ((editorWidth - width) / 2).rounded(.down))
     }
 
-    /// Grab areas just outside both edges of the text. Dragging either one resizes the text around its center.
     private func columnHandles(margin: CGFloat) -> some View {
         HStack(spacing: 0) {
             columnHandle(direction: -1)
@@ -172,7 +169,6 @@ struct ContentView: View {
         }
     }
 
-    /// The panel's left border, which can be dragged to resize it.
     private var panelResizeHandle: some View {
         Rectangle()
             .fill(Theme.border)
@@ -228,7 +224,6 @@ struct ContentView: View {
         TabButton(title: title, isActive: isActive, action: action)
     }
 
-    /// The file's folder relative to the project root, or the root's name for top-level files.
     private func directory(of file: URL) -> String {
         guard let root = workspace.root else { return "" }
         let rootPath = root.url.standardizedFileURL.path
@@ -238,7 +233,6 @@ struct ContentView: View {
     }
 }
 
-/// A tab marked like a selected row in the file tree.
 private struct TabButton: View {
     let title: String
     let isActive: Bool

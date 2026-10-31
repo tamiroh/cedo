@@ -33,7 +33,6 @@ final class ShellSession: NSObject, LocalProcessTerminalViewDelegate {
         view.terminate()
     }
 
-    /// The app's own environment, with the terminal-specific variables SwiftTerm recommends.
     private static func environment() -> [String] {
         var env = ProcessInfo.processInfo.environment
         for entry in Terminal.getEnvironmentVariables(termName: "xterm-256color") {

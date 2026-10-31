@@ -4,10 +4,8 @@ public struct Commit: Identifiable, Hashable {
     public let hash: String
     public let date: Date
     public let subject: String
-    /// Characters added and removed in the file, ignoring whitespace.
     public let added: Int
     public let removed: Int
-    /// The file's path at this commit, relative to the repository root.
     public let path: String
 
     public var id: String { hash }
@@ -19,7 +17,6 @@ public enum Git {
         var errorDescription: String? { message }
     }
 
-    /// Commits that touched the file, newest first, following renames.
     public static func history(of file: URL) async throws -> [Commit] {
         let output = try await run(
             [
@@ -42,7 +39,6 @@ public enum Git {
         }
     }
 
-    /// The file's path after the change, from a patch's headers.
     static func path(inPatch lines: some Sequence<Substring>) -> String? {
         var path: String?
         for line in lines {
@@ -73,7 +69,6 @@ public enum Git {
         }
     }
 
-    /// The changes the commit made to the file.
     public static func diff(of commit: Commit, near file: URL) async throws -> String {
         try await run(
             ["show", "--no-color", "--format=", commit.hash, "--", ":(top)" + commit.path],
@@ -81,13 +76,11 @@ public enum Git {
         )
     }
 
-    /// The root of the repository that contains the file.
     static func topLevel(of file: URL) throws -> URL {
         let path = try runSync(["rev-parse", "--show-toplevel"], in: file.deletingLastPathComponent())
         return URL(fileURLWithPath: path.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
-    /// The file's content at HEAD, or nil if it is not committed yet.
     static func headVersion(of file: URL) -> String? {
         try? runSync(["show", "HEAD:./" + file.lastPathComponent], in: file.deletingLastPathComponent())
     }
@@ -96,7 +89,6 @@ public enum Git {
         try await Task.detached { try runSync(arguments, in: directory) }.value
     }
 
-    /// Runs git and returns its output. Blocks until git exits.
     @discardableResult
     static func runSync(_ arguments: [String], in directory: URL) throws -> String {
         let process = Process()

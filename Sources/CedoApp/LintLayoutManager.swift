@@ -1,6 +1,5 @@
 import AppKit
 
-/// Draws wavy underlines below the text that textlint reported.
 final class LintLayoutManager: NSLayoutManager {
     struct Mark {
         var range: NSRange
@@ -8,7 +7,6 @@ final class LintLayoutManager: NSLayoutManager {
         let isError: Bool
     }
 
-    /// Redrawing after a change is up to the caller.
     var marks: [Mark] = []
 
     override func drawGlyphs(forGlyphRange glyphsToShow: NSRange, at origin: NSPoint) {

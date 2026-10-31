@@ -1,7 +1,6 @@
 import Foundation
 import Observation
 
-/// What cedo did behind the scenes, such as saving and committing. Safe to write to from any thread.
 @Observable
 public final class DebugLog {
     public struct Entry: Identifiable {

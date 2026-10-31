@@ -4,7 +4,6 @@ import Foundation
 ///
 ///     { "highlights": [{ "pattern": "TODO", "color": "#e5c07b", "background": "#3a3220" }] }
 public struct Configuration {
-    /// A pattern to color in the text.
     public struct Highlight {
         public let regex: NSRegularExpression
         /// Colors as 0xRRGGBB.
@@ -15,7 +14,6 @@ public struct Configuration {
     public struct HighlightMatch: Equatable {
         /// In UTF-16 code units, as in `NSString`.
         public let range: NSRange
-        /// The index of the matching pattern in `highlights`.
         public let highlight: Int
     }
 
@@ -26,7 +24,6 @@ public struct Configuration {
 
     public static let fileName = ".cedo.json"
 
-    /// Tells one loaded version of the settings from another.
     public let id = UUID()
     public let highlights: [Highlight]
 
@@ -62,7 +59,6 @@ public struct Configuration {
         }
     }
 
-    /// Reads the settings file in the folder, or returns nil if there is none.
     public init?(root: URL) throws {
         guard let data = try? Data(contentsOf: Self.url(in: root)) else { return nil }
         try self.init(data: data)

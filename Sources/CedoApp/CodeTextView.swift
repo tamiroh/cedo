@@ -2,14 +2,11 @@ import AppKit
 import CedoKit
 import SwiftUI
 
-/// A monospaced plain-text editor with smart quotes and other automatic substitutions turned off.
 struct CodeTextView: NSViewRepresentable {
     let text: String
-    /// The file being edited. A new document resets the scroll position and undo history.
     let document: URL
     let lint: Workspace.Lint?
     let configuration: Configuration?
-    /// Space on each side of the text. Views above the text use the same value to line up with it.
     let horizontalInset: CGFloat
     let onChange: (String) -> Void
 
@@ -25,7 +22,6 @@ struct CodeTextView: NSViewRepresentable {
         ]
     }()
 
-    /// The width of one full-width character, the unit for the number of characters per line.
     static let characterWidth = NSAttributedString(string: "あ", attributes: attributes).size().width
 
     func makeCoordinator() -> Coordinator { Coordinator(onChange: onChange) }
@@ -90,13 +86,11 @@ struct CodeTextView: NSViewRepresentable {
             textView.scrollToBeginningOfDocument(nil)
             context.coordinator.clearMarks()
         } else if textView.string != text, !textView.hasMarkedText() {
-            // Typing keeps the two in sync, so a difference means the file was reloaded after an outside change.
-            // Text still being composed in an input method isn't passed on yet, so it differs without that.
+            // Only an outside change makes these differ, apart from text still being composed in an input method
             let selection = textView.selectedRange()
             let origin = scrollView.contentView.bounds.origin
             setText(text, in: textView)
             textView.undoManager?.removeAllActions()
-            // Keep the caret and scroll position where they were
             let length = (text as NSString).length
             textView.setSelectedRange(NSRange(location: min(selection.location, length), length: 0))
             scrollView.contentView.scroll(to: origin)
@@ -158,7 +152,6 @@ struct CodeTextView: NSViewRepresentable {
             setNeedsToolTips()
         }
 
-        /// Moves the marks along with edits made before them, and drops the ones whose text was edited.
         func textStorage(
             _ textStorage: NSTextStorage, didProcessEditing editedMask: NSTextStorageEditActions,
             range editedRange: NSRange, changeInLength delta: Int
@@ -182,7 +175,6 @@ struct CodeTextView: NSViewRepresentable {
             setNeedsToolTips()
         }
 
-        /// Colors the text that matches the folder's highlight patterns, after an edit or a change to the settings.
         func applyHighlights(of configuration: Configuration?) {
             guard highlightsAreStale || configuration?.id != appliedConfigurationID,
                 let textView, let layoutManager
@@ -214,7 +206,6 @@ struct CodeTextView: NSViewRepresentable {
             setNeedsToolTips()
         }
 
-        /// Rebuilds the hover areas once the current change has been laid out.
         func setNeedsToolTips() {
             guard !needsToolTips else { return }
             needsToolTips = true

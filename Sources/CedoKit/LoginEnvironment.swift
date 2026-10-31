@@ -1,11 +1,8 @@
 import Foundation
 
-/// The environment variables the user's shell sets up.
-///
 /// Apps opened from the Finder get a minimal PATH, so tools installed with Homebrew, asdf and the like
 /// can only be found through the shell's own configuration.
 public enum LoginEnvironment {
-    /// Loaded on first use, which can take a moment while the shell starts.
     public static let variables: [String: String] = load() ?? ProcessInfo.processInfo.environment
 
     private static let marker = "__CEDO_ENVIRONMENT__"

@@ -4,8 +4,6 @@ import Foundation
     import FoundationModels
 #endif
 
-/// A one-line description of a set of edits for the history, such as "Rewrote the install steps".
-///
 /// Simple cases are recognized by rule. The rest go to the on-device Apple Intelligence model, which reads the
 /// edits as rewritten, removed and added lines; given a raw diff it tends to retell the content instead.
 enum EditSummary {
@@ -18,7 +16,6 @@ enum EditSummary {
     private static let timeout: TimeInterval = 15
     private static let maxInputLength = 2000
 
-    /// Returns nil when there is nothing to describe or the model is unavailable or fails.
     static func describe(diff: String) -> String? {
         let edits = edits(in: diff)
         guard !edits.isEmpty else { return nil }
@@ -29,7 +26,6 @@ enum EditSummary {
         return modelSummary(of: edits, in: language)
     }
 
-    /// Reads a `git diff -U0`, pairing removed and added lines of a hunk as rewrites.
     static func edits(in diff: String) -> [Edit] {
         var edits: [Edit] = []
         var removed: [String] = []
@@ -64,7 +60,6 @@ enum EditSummary {
         }
         guard rewrites.count == edits.count, let first = rewrites.first else { return nil }
 
-        // The same word replaced everywhere, as when a term or name is changed
         let (from, to) = difference(first.0, first.1)
         let occurrences = rewrites.reduce(0) { $0 + $1.0.components(separatedBy: from).count - 1 }
         if !from.isEmpty, occurrences >= 2,
@@ -79,7 +74,6 @@ enum EditSummary {
         return nil
     }
 
-    /// The parts of two strings between their common prefix and suffix.
     static func difference(_ old: String, _ new: String) -> (String, String) {
         let old = Array(old)
         let new = Array(new)
@@ -124,7 +118,6 @@ enum EditSummary {
         return lines.joined(separator: "\n")
     }
 
-    /// Keeps the first line, without a closing period or a bracket left open by the model.
     static func cleanUp(_ summary: String, in language: Language) -> String {
         var line = summary.split(separator: "\n").first.map(String.init) ?? ""
         line = line.trimmingCharacters(in: .whitespaces)

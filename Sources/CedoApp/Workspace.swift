@@ -4,7 +4,6 @@ import Foundation
 
 @MainActor
 final class Workspace: ObservableObject {
-    /// textlint's report on one version of a file's text.
     struct Lint {
         let id = UUID()
         let file: URL
@@ -29,7 +28,6 @@ final class Workspace: ObservableObject {
     @Published var ui = UIState.load() {
         didSet { ui.save() }
     }
-    /// Bumped after each auto-commit so the history view can reload.
     @Published private(set) var historyVersion = 0
 
     private var saveTimer: Timer?
@@ -63,7 +61,6 @@ final class Workspace: ObservableObject {
         }
     }
 
-    /// Saves and commits the last edits. Returns false if saving failed and the user chose to keep the app open.
     func prepareToQuit() -> Bool {
         guard saveBeforeLeaving() else { return false }
         autoCommitter.flushAndWait()
@@ -109,7 +106,6 @@ final class Workspace: ObservableObject {
         }
     }
 
-    /// Asks for a name and creates an empty file, by default next to the open file.
     func newFile(in directory: URL? = nil) {
         guard let root else { return }
         let folder = directory ?? selectedFile?.deletingLastPathComponent() ?? root.url
@@ -185,7 +181,6 @@ final class Workspace: ObservableObject {
         configuration = nil
         reloadConfigurationIfChanged()
         clearEditor()
-        // The shell belongs to the old folder, so start a fresh one
         shell?.terminate()
         shell = nil
         if panel == .terminal {
@@ -217,7 +212,6 @@ final class Workspace: ObservableObject {
         }
     }
 
-    /// Writes pending edits to disk, unless the file was changed outside cedo in the meantime.
     func save() {
         saveTimer?.invalidate()
         saveTimer = nil
@@ -267,7 +261,6 @@ final class Workspace: ObservableObject {
         }
     }
 
-    /// Both cedo and something else changed the file; asks which version to keep.
     private func resolveConflict(in url: URL, onDisk: String) {
         isResolvingConflict = true
         defer { isResolvingConflict = false }
@@ -279,7 +272,6 @@ final class Workspace: ObservableObject {
         alert.addButton(withTitle: "Keep Mine")
         alert.addButton(withTitle: "Use the Other Version")
         if alert.runModal() == .alertFirstButtonReturn {
-            // Record the other version in the history before replacing it
             autoCommitter.fileSaved(url)
             autoCommitter.flushAndWait()
             log.info("Kept the edits in cedo")
@@ -291,7 +283,6 @@ final class Workspace: ObservableObject {
         }
     }
 
-    /// Saves before leaving the current file. Returns false if saving failed and the user chose to stay.
     private func saveBeforeLeaving() -> Bool {
         save()
         guard let document, document.isDirty else { return true }
@@ -363,7 +354,6 @@ final class Workspace: ObservableObject {
         }
     }
 
-    /// Reads the folder's settings again when the file is added, edited or removed.
     private func reloadConfigurationIfChanged() {
         guard let root else { return }
         let url = Configuration.url(in: root.url)

@@ -1,6 +1,5 @@
 import Foundation
 
-/// A project's own textlint, found in its `node_modules` and run with its configuration.
 public struct Textlint {
     public struct Diagnostic: Equatable {
         /// In UTF-16 code units, as in `NSString`.
@@ -22,7 +21,6 @@ public struct Textlint {
     public let root: URL
     private let executable: URL
 
-    /// Returns nil unless the folder has both a textlint configuration and textlint installed.
     public init?(root: URL) {
         let fileManager = FileManager.default
         let executable = root.appendingPathComponent("node_modules/.bin/textlint")
@@ -34,7 +32,6 @@ public struct Textlint {
         self.executable = executable
     }
 
-    /// Checks the text as if it were the content of the file, which does not have to be saved.
     public func lint(_ text: String, of file: URL) async throws -> [Diagnostic] {
         let process = Process()
         process.executableURL = executable

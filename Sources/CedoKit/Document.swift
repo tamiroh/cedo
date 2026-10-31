@@ -1,6 +1,5 @@
 import Foundation
 
-/// A UTF-8 text file being edited, along with what cedo last read from or wrote to disk.
 public struct Document: Equatable {
     public enum SaveResult: Equatable {
         case saved
@@ -45,7 +44,6 @@ public struct Document: Equatable {
         return .saved
     }
 
-    /// Takes changes made by something else, unless they clash with unsaved edits.
     public mutating func checkForOutsideChanges() -> OutsideChange {
         let date = Self.modificationDate(of: url)
         guard date != savedModificationDate,

@@ -1,10 +1,8 @@
 import CedoKit
 import SwiftUI
 
-/// The Git history of one file: its commits on the left, and the selected commit's diff on the right.
 struct HistoryView: View {
     let file: URL
-    /// Changing this reloads the history, e.g. after an auto-commit.
     let refreshKey: Int
     @State private var commits: Loadable<[Commit]> = .loading
     @State private var selected: Commit?
@@ -144,7 +142,6 @@ private struct CommitRow: View {
         .onHover { hovering = $0 }
     }
 
-    /// Such as "10/30 14:32 · 11 hours ago", with the year only for earlier years.
     static func timestamp(of date: Date, now: Date = .now) -> String {
         let format: Date.FormatString =
             Calendar.current.isDate(date, equalTo: now, toGranularity: .year)
