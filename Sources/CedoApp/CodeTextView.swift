@@ -104,7 +104,10 @@ struct CodeTextView: NSViewRepresentable {
         textView.textStorage?.setAttributedString(NSAttributedString(string: text, attributes: Self.attributes))
     }
 
-    final class Coordinator: NSObject, NSTextViewDelegate, NSTextStorageDelegate, NSViewToolTipOwner {
+    @MainActor
+    final class Coordinator: NSObject, NSTextViewDelegate, @preconcurrency NSTextStorageDelegate,
+        NSViewToolTipOwner
+    {
         var onChange: (String) -> Void
         var document: URL?
         weak var textView: NSTextView?

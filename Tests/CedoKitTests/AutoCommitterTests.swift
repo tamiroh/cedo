@@ -3,6 +3,7 @@ import Testing
 
 @testable import CedoKit
 
+@MainActor
 struct AutoCommitterTests {
     let repository: URL
 

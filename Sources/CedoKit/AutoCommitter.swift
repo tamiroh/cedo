@@ -2,12 +2,12 @@ import Foundation
 
 /// A pause is a few idle minutes after saving, switching to another file or folder, or quitting.
 /// Only files saved in cedo are committed; other changes in the repository are left alone.
+@MainActor
 public final class AutoCommitter {
     private static let idleDelay: TimeInterval = 5 * 60
 
-    public var onCommit: (() -> Void)?
+    public var onCommit: (@MainActor () -> Void)?
 
-    // Accessed on the main thread only
     private var pending: Set<URL> = []
     private var idleTimer: DispatchWorkItem?
 
@@ -51,19 +51,19 @@ public final class AutoCommitter {
         let log = log
         queue.async {
             if Self.commit(files, summarizing: summarizing, log: log) {
-                DispatchQueue.main.async { onCommit?() }
+                DispatchQueue.main.async { MainActor.assumeIsolated { onCommit?() } }
             }
         }
     }
 
     private func restartIdleTimer() {
         idleTimer?.cancel()
-        let timer = DispatchWorkItem { [weak self] in self?.flush() }
+        let timer = DispatchWorkItem { [weak self] in MainActor.assumeIsolated { self?.flush() } }
         idleTimer = timer
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.idleDelay, execute: timer)
     }
 
-    private static func commit(_ files: Set<URL>, summarizing: Bool, log: DebugLog) -> Bool {
+    private nonisolated static func commit(_ files: Set<URL>, summarizing: Bool, log: DebugLog) -> Bool {
         let byRepository = Dictionary(grouping: files) { try? Git.topLevel(of: $0) }
         var committed = false
         for (repository, files) in byRepository {
@@ -86,11 +86,11 @@ public final class AutoCommitter {
         return committed
     }
 
-    private static func names(_ files: [URL]) -> String {
+    private nonisolated static func names(_ files: [URL]) -> String {
         files.map(\.lastPathComponent).sorted().joined(separator: ", ")
     }
 
-    private static func commit(_ files: [URL], in repository: URL, summarizing: Bool, log: DebugLog) throws
+    private nonisolated static func commit(_ files: [URL], in repository: URL, summarizing: Bool, log: DebugLog) throws
         -> String?
     {
         var changes: [Change] = []
@@ -128,7 +128,7 @@ public final class AutoCommitter {
         let characterDelta: Int
     }
 
-    static func message(for changes: [Change], summary: String? = nil) -> String {
+    nonisolated static func message(for changes: [Change], summary: String? = nil) -> String {
         func describe(_ change: Change) -> String {
             let sign = change.characterDelta < 0 ? "-" : "+"
             return "\(change.file.lastPathComponent) (\(sign)\(abs(change.characterDelta)) chars)"

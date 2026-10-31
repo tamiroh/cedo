@@ -3,6 +3,7 @@ import SwiftTerm
 
 /// Owns a terminal view and the login shell running in it, so the session
 /// survives the terminal panel being hidden and shown again.
+@MainActor
 final class ShellSession: NSObject, LocalProcessTerminalViewDelegate {
     let view: LocalProcessTerminalView
     private let onExit: (ShellSession) -> Void
@@ -42,11 +43,11 @@ final class ShellSession: NSObject, LocalProcessTerminalViewDelegate {
         return env.map { "\($0.key)=\($0.value)" }
     }
 
-    func sizeChanged(source: LocalProcessTerminalView, newCols: Int, newRows: Int) {}
-    func setTerminalTitle(source: LocalProcessTerminalView, title: String) {}
-    func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
+    nonisolated func sizeChanged(source: LocalProcessTerminalView, newCols: Int, newRows: Int) {}
+    nonisolated func setTerminalTitle(source: LocalProcessTerminalView, title: String) {}
+    nonisolated func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
 
-    func processTerminated(source: TerminalView, exitCode: Int32?) {
-        DispatchQueue.main.async { self.onExit(self) }
+    nonisolated func processTerminated(source: TerminalView, exitCode: Int32?) {
+        DispatchQueue.main.async { MainActor.assumeIsolated { self.onExit(self) } }
     }
 }

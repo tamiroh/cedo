@@ -127,18 +127,18 @@ enum EditSummary {
             let instructions = language.instructions
 
             // Commits run on a background queue that waits for the answer
-            var summary: String?
+            let answer = Handoff<String?>(nil)
             let done = DispatchSemaphore(value: 0)
             let task = Task {
                 defer { done.signal() }
                 let session = LanguageModelSession(instructions: instructions)
-                summary = try? await session.respond(to: input, generating: Generated.self).content.text
+                answer.value = try? await session.respond(to: input, generating: Generated.self).content.text
             }
             guard done.wait(timeout: .now() + timeout) == .success else {
                 task.cancel()
                 return nil
             }
-            let line = cleanUp(summary ?? "", in: language)
+            let line = cleanUp(answer.value ?? "", in: language)
             return line.isEmpty ? nil : String(line.prefix(80))
         #else
             return nil

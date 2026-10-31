@@ -1,7 +1,7 @@
 import Foundation
 
-public struct Textlint {
-    public struct Diagnostic: Equatable {
+public struct Textlint: Sendable {
+    public struct Diagnostic: Equatable, Sendable {
         /// In UTF-16 code units, as in `NSString`.
         public let range: NSRange
         public let message: String
@@ -74,13 +74,13 @@ public struct Textlint {
 
         // Write and read at the same time, so neither side waits on a full pipe
         let group = DispatchGroup()
-        var error = Data()
+        let error = Handoff(Data())
         DispatchQueue.global().async(group: group) {
             stdin.fileHandleForWriting.write(Data(input.utf8))
             try? stdin.fileHandleForWriting.close()
         }
         DispatchQueue.global().async(group: group) {
-            error = stderr.fileHandleForReading.readDataToEndOfFile()
+            error.value = stderr.fileHandleForReading.readDataToEndOfFile()
         }
         let output = stdout.fileHandleForReading.readDataToEndOfFile()
         group.wait()
@@ -88,7 +88,7 @@ public struct Textlint {
 
         // textlint exits with 1 when it finds problems, which is not a failure
         guard process.terminationStatus == 0 || process.terminationStatus == 1 else {
-            let message = String(decoding: error.isEmpty ? output : error, as: UTF8.self)
+            let message = String(decoding: error.value.isEmpty ? output : error.value, as: UTF8.self)
             throw Failure(message: message.trimmingCharacters(in: .whitespacesAndNewlines))
         }
         return output

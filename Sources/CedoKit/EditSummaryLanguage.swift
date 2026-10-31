@@ -3,7 +3,7 @@ import NaturalLanguage
 
 extension EditSummary {
     /// The wording of summaries in one language. Add a language by defining one more and listing it in `supported`.
-    struct Language {
+    struct Language: Sendable {
         let code: NLLanguage
         let quotes: (open: String, close: String)
         let period: String
@@ -11,8 +11,8 @@ extension EditSummary {
         let rewrittenLabel: String
         let removedLabel: String
         let addedLabel: String
-        let more: (Int) -> String
-        let renamed: (String, String) -> String
+        let more: @Sendable (Int) -> String
+        let renamed: @Sendable (String, String) -> String
         let smallFixes: String
 
         /// The first one is used when the text is in none of them.

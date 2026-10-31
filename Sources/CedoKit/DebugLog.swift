@@ -1,9 +1,10 @@
 import Foundation
 import Observation
 
+@MainActor
 @Observable
 public final class DebugLog {
-    public struct Entry: Identifiable {
+    public struct Entry: Identifiable, Sendable {
         public let id: Int
         public let date: Date
         public let message: String
@@ -12,27 +13,27 @@ public final class DebugLog {
 
     private static let limit = 1000
 
-    /// Updated on the main thread only.
     public private(set) var entries: [Entry] = []
     @ObservationIgnored private var nextID = 0
 
-    public init() {}
+    public nonisolated init() {}
 
-    public func info(_ message: String) {
+    public nonisolated func info(_ message: String) {
         add(message, isError: false)
     }
 
-    public func error(_ message: String) {
+    public nonisolated func error(_ message: String) {
         add(message, isError: true)
     }
 
-    private func add(_ message: String, isError: Bool) {
+    private nonisolated func add(_ message: String, isError: Bool) {
         let date = Date()
         NSLog("cedo: %@", message)
+        // Synchronous on the main thread, so entries stay in the order they were logged
         if Thread.isMainThread {
-            append(message, date: date, isError: isError)
+            MainActor.assumeIsolated { append(message, date: date, isError: isError) }
         } else {
-            DispatchQueue.main.async { self.append(message, date: date, isError: isError) }
+            DispatchQueue.main.async { MainActor.assumeIsolated { self.append(message, date: date, isError: isError) } }
         }
     }
 

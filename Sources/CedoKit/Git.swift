@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Commit: Identifiable, Hashable {
+public struct Commit: Identifiable, Hashable, Sendable {
     public let hash: String
     public let date: Date
     public let subject: String
