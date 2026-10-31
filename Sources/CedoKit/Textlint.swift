@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 public struct Textlint: Sendable {
     public struct Diagnostic: Equatable, Sendable {
@@ -74,13 +75,14 @@ public struct Textlint: Sendable {
 
         // Write and read at the same time, so neither side waits on a full pipe
         let group = DispatchGroup()
-        let error = Handoff(Data())
+        let error = OSAllocatedUnfairLock(initialState: Data())
         DispatchQueue.global().async(group: group) {
             stdin.fileHandleForWriting.write(Data(input.utf8))
             try? stdin.fileHandleForWriting.close()
         }
         DispatchQueue.global().async(group: group) {
-            error.value = stderr.fileHandleForReading.readDataToEndOfFile()
+            let data = stderr.fileHandleForReading.readDataToEndOfFile()
+            error.withLock { $0 = data }
         }
         let output = stdout.fileHandleForReading.readDataToEndOfFile()
         group.wait()
@@ -88,7 +90,8 @@ public struct Textlint: Sendable {
 
         // textlint exits with 1 when it finds problems, which is not a failure
         guard process.terminationStatus == 0 || process.terminationStatus == 1 else {
-            let message = String(decoding: error.value.isEmpty ? output : error.value, as: UTF8.self)
+            let error = error.withLock { $0 }
+            let message = String(decoding: error.isEmpty ? output : error, as: UTF8.self)
             throw Failure(message: message.trimmingCharacters(in: .whitespacesAndNewlines))
         }
         return output

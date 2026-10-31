@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 #if canImport(FoundationModels)
     import FoundationModels
@@ -127,18 +128,19 @@ enum EditSummary {
             let instructions = language.instructions
 
             // Commits run on a background queue that waits for the answer
-            let answer = Handoff<String?>(nil)
+            let answer = OSAllocatedUnfairLock<String?>(initialState: nil)
             let done = DispatchSemaphore(value: 0)
             let task = Task {
                 defer { done.signal() }
                 let session = LanguageModelSession(instructions: instructions)
-                answer.value = try? await session.respond(to: input, generating: Generated.self).content.text
+                let text = try? await session.respond(to: input, generating: Generated.self).content.text
+                answer.withLock { $0 = text }
             }
             guard done.wait(timeout: .now() + timeout) == .success else {
                 task.cancel()
                 return nil
             }
-            let line = cleanUp(answer.value ?? "", in: language)
+            let line = cleanUp(answer.withLock { $0 } ?? "", in: language)
             return line.isEmpty ? nil : String(line.prefix(80))
         #else
             return nil
