@@ -19,43 +19,52 @@ public struct Document: Equatable {
     public var text: String
     private var savedText: String
     private var savedModificationDate: Date?
+    private var hasByteOrderMark: Bool
+    /// Where the text is read and written, so saving through a symbolic link keeps the link.
+    private let target: URL
 
-    public var isDirty: Bool { text != savedText }
+    // Compared byte for byte: String's == treats "é" and "e" + a combining accent as equal
+    public var isDirty: Bool { !Self.same(text, savedText) }
 
     public init?(url: URL) {
-        guard let content = try? String(contentsOf: url, encoding: .utf8) else { return nil }
+        let target = url.resolvingSymlinksInPath()
+        guard let (content, hasByteOrderMark) = Self.read(target) else { return nil }
         self.url = url
+        self.target = target
+        self.hasByteOrderMark = hasByteOrderMark
         text = content
         savedText = content
-        savedModificationDate = Self.modificationDate(of: url)
+        savedModificationDate = Self.modificationDate(of: target)
     }
 
     public mutating func save(overwritingOutsideChanges: Bool = false) throws -> SaveResult {
         guard isDirty else { return .unchanged }
         if !overwritingOutsideChanges {
-            guard let onDisk = try? String(contentsOf: url, encoding: .utf8) else { return .unreadable }
-            if onDisk != savedText {
+            guard let (onDisk, _) = Self.read(target) else { return .unreadable }
+            if !Self.same(onDisk, savedText) {
                 return .conflict(onDisk: onDisk)
             }
         }
-        try text.write(to: url, atomically: true, encoding: .utf8)
+        let bytes = Data(text.utf8)
+        try ((hasByteOrderMark ? Self.byteOrderMark : Data()) + bytes).write(to: target, options: .atomic)
         savedText = text
-        savedModificationDate = Self.modificationDate(of: url)
+        savedModificationDate = Self.modificationDate(of: target)
         return .saved
     }
 
     public mutating func checkForOutsideChanges() -> OutsideChange {
-        let date = Self.modificationDate(of: url)
-        guard date != savedModificationDate,
-            let onDisk = try? String(contentsOf: url, encoding: .utf8)
-        else { return .unchanged }
-        guard onDisk != savedText else {
+        let date = Self.modificationDate(of: target)
+        guard date != savedModificationDate, let (onDisk, hasByteOrderMark) = Self.read(target) else {
+            return .unchanged
+        }
+        guard !Self.same(onDisk, savedText) else {
             savedModificationDate = date
             return .unchanged
         }
         if isDirty {
             return .conflict(onDisk: onDisk)
         }
+        self.hasByteOrderMark = hasByteOrderMark
         adopt(onDisk)
         return .reloaded
     }
@@ -63,7 +72,20 @@ public struct Document: Equatable {
     public mutating func adopt(_ content: String) {
         text = content
         savedText = content
-        savedModificationDate = Self.modificationDate(of: url)
+        savedModificationDate = Self.modificationDate(of: target)
+    }
+
+    private static let byteOrderMark = Data([0xEF, 0xBB, 0xBF])
+
+    private static func read(_ url: URL) -> (String, hasByteOrderMark: Bool)? {
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        let hasByteOrderMark = data.starts(with: byteOrderMark)
+        guard let text = String(data: data.dropFirst(hasByteOrderMark ? 3 : 0), encoding: .utf8) else { return nil }
+        return (text, hasByteOrderMark)
+    }
+
+    static func same(_ a: String, _ b: String) -> Bool {
+        a.utf8.elementsEqual(b.utf8)
     }
 
     private static func modificationDate(of url: URL) -> Date? {

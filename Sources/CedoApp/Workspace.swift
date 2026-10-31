@@ -12,6 +12,7 @@ final class Workspace: ObservableObject {
     }
 
     private static let saveDelay: TimeInterval = 1
+    private static let maxSaveDelay: TimeInterval = 5
     private static let outsideChangeInterval: TimeInterval = 1
     private static let lintDelay: TimeInterval = 0.5
 
@@ -31,6 +32,7 @@ final class Workspace: ObservableObject {
     @Published private(set) var historyVersion = 0
 
     private var saveTimer: Timer?
+    private var unsavedSince: Date?
     private var outsideChangeTimer: Timer?
     private var isResolvingConflict = false
     private var textlint: Textlint?
@@ -207,7 +209,11 @@ final class Workspace: ObservableObject {
         document?.text = newText
         autoCommitter.textChanged()
         saveTimer?.invalidate()
-        saveTimer = Timer.scheduledTimer(withTimeInterval: Self.saveDelay, repeats: false) { [weak self] _ in
+        // Waits for a pause in typing, but not so long that a crash loses much
+        let unsavedSince = self.unsavedSince ?? .now
+        self.unsavedSince = unsavedSince
+        let delay = min(Self.saveDelay, max(0, Self.maxSaveDelay + unsavedSince.timeIntervalSinceNow))
+        saveTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated { self?.save() }
         }
     }
@@ -215,6 +221,7 @@ final class Workspace: ObservableObject {
     func save() {
         saveTimer?.invalidate()
         saveTimer = nil
+        unsavedSince = nil
         guard !isResolvingConflict else { return }
         write()
     }
@@ -312,6 +319,7 @@ final class Workspace: ObservableObject {
     private func clearEditor() {
         saveTimer?.invalidate()
         saveTimer = nil
+        unsavedSince = nil
         selectedFile = nil
         document = nil
         saveFailed = false

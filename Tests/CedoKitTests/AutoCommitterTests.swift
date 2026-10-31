@@ -38,6 +38,31 @@ struct AutoCommitterTests {
         #expect(try git("diff", "--cached", "--name-only") == "staged.md\n")
     }
 
+    @Test func readsFileNamesLiterally() throws {
+        try write("a", to: "a*.md")
+        try write("b", to: "another.md")
+
+        let committer = AutoCommitter(log: DebugLog())
+        committer.fileSaved(file("a*.md"))
+        committer.flushAndWait()
+
+        #expect(try git("show", "--name-only", "--format=", "HEAD") == "a*.md\n")
+        #expect(try git("status", "--porcelain", "--", "another.md") == "?? another.md\n")
+    }
+
+    @Test func leavesAFileWithStagedChangesAlone() throws {
+        try write("staged only", to: "edited.md")
+        try git("add", "edited.md")
+        try write("in the working tree", to: "edited.md")
+
+        let committer = AutoCommitter(log: DebugLog())
+        committer.fileSaved(file("edited.md"))
+        committer.flushAndWait()
+
+        #expect(try git("rev-list", "--count", "HEAD") == "1\n")
+        #expect(try git("show", ":edited.md") == "staged only")
+    }
+
     @Test func makesNoCommitWhenNothingChanged() throws {
         let committer = AutoCommitter(log: DebugLog())
         committer.fileSaved(file("unchanged.md"))

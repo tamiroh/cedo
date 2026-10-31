@@ -78,6 +78,37 @@ struct DocumentTests {
         #expect(!FileManager.default.fileExists(atPath: file.path))
     }
 
+    @Test func savesThroughASymbolicLink() throws {
+        let link = file.deletingLastPathComponent().appendingPathComponent("link.md")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: file)
+        var document = try #require(Document(url: link))
+        document.text = "edited"
+
+        #expect(try document.save() == .saved)
+        #expect(try onDisk() == "edited")
+        #expect(try FileManager.default.destinationOfSymbolicLink(atPath: link.path) == file.path)
+    }
+
+    @Test func keepsTheByteOrderMark() throws {
+        try Data([0xEF, 0xBB, 0xBF] + Array("original".utf8)).write(to: file)
+        var document = try #require(Document(url: file))
+        #expect(document.text == "original")
+        document.text = "edited"
+
+        #expect(try document.save() == .saved)
+        #expect(try Data(contentsOf: file) == Data([0xEF, 0xBB, 0xBF] + Array("edited".utf8)))
+    }
+
+    @Test func savesAChangeInUnicodeNormalization() throws {
+        try write("caf\u{E9}")
+        var document = try #require(Document(url: file))
+        document.text = "cafe\u{301}"
+
+        #expect(document.isDirty)
+        #expect(try document.save() == .saved)
+        #expect(try Data(contentsOf: file) == Data("cafe\u{301}".utf8))
+    }
+
     @Test func ignoresATouchThatKeepsTheContent() throws {
         var document = try #require(Document(url: file))
         try FileManager.default.setAttributes(

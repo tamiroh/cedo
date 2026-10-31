@@ -22,7 +22,7 @@ public enum Git {
             [
                 "log", "--follow", "--no-color", "--patch", "--unified=0",
                 "--format=%x1e%H%x1f%at%x1f%s",
-                "--", file.lastPathComponent,
+                "--", ":(literal)" + file.lastPathComponent,
             ],
             in: file.deletingLastPathComponent()
         )
@@ -71,7 +71,7 @@ public enum Git {
 
     public static func diff(of commit: Commit, near file: URL) async throws -> String {
         try await run(
-            ["show", "--no-color", "--format=", commit.hash, "--", ":(top)" + commit.path],
+            ["show", "--no-color", "--format=", commit.hash, "--", ":(top,literal)" + commit.path],
             in: file.deletingLastPathComponent()
         )
     }

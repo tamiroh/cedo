@@ -73,7 +73,7 @@ public final class AutoCommitter {
             }
             do {
                 let sorted = files.sorted { $0.path < $1.path }
-                if let message = try commit(sorted, in: repository, summarizing: summarizing) {
+                if let message = try commit(sorted, in: repository, summarizing: summarizing, log: log) {
                     log.info("Committed in \(repository.lastPathComponent): \(message.prefix { $0 != "\n" })")
                     committed = true
                 } else {
@@ -90,16 +90,27 @@ public final class AutoCommitter {
         files.map(\.lastPathComponent).sorted().joined(separator: ", ")
     }
 
-    private static func commit(_ files: [URL], in repository: URL, summarizing: Bool) throws -> String? {
+    private static func commit(_ files: [URL], in repository: URL, summarizing: Bool, log: DebugLog) throws
+        -> String?
+    {
         var changes: [Change] = []
         for file in files {
+            let path = ":(literal)" + file.path
+            // `add` would replace what someone staged by hand, which may exist nowhere else
+            guard try Git.runSync(["diff", "--cached", "--name-only", "--", path], in: repository).isEmpty else {
+                log.info("Not committing \(file.lastPathComponent): it has staged changes")
+                continue
+            }
             let old = Git.headVersion(of: file) ?? ""
-            guard let new = try? String(contentsOf: file, encoding: .utf8), new != old else { continue }
+            guard let data = try? Data(contentsOf: file) else { continue }
+            let new = String(decoding: data, as: UTF8.self)
+            guard !Document.same(new, old) else { continue }
             changes.append(Change(file: file, characterDelta: new.count - old.count))
         }
         guard !changes.isEmpty else { return nil }
 
-        let paths = changes.map(\.file.path)
+        // Literal, so a name such as a*.md doesn't match other files
+        let paths = changes.map { ":(literal)" + $0.file.path }
         // `add` picks up new files; `--only` keeps anything else the user has staged out of this commit
         try Git.runSync(["add", "--"] + paths, in: repository)
         var summary: String?
