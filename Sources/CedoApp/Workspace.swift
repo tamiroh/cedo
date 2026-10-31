@@ -14,7 +14,7 @@ final class Workspace: ObservableObject {
     private static let saveDelay: TimeInterval = 1
     private static let maxSaveDelay: TimeInterval = 5
     private static let outsideChangeInterval: TimeInterval = 1
-    private static let lintDelay: TimeInterval = 0.5
+    private static let lintDelay: Duration = .milliseconds(500)
 
     @Published private(set) var root: FileNode?
     @Published private(set) var selectedFile: URL?
@@ -24,7 +24,6 @@ final class Workspace: ObservableObject {
     @Published private(set) var lint: Lint?
     @Published private(set) var configuration: Configuration?
     @Published private(set) var saveFailed = false
-    @Published private(set) var errorMessage: String?
     @Published private(set) var shell: ShellSession?
     @Published var ui = UIState.load() {
         didSet { ui.save() }
@@ -37,13 +36,16 @@ final class Workspace: ObservableObject {
     private var isResolvingConflict = false
     private var textlint: Textlint?
     private var configurationModificationDate: Date?
-    private var lintTimer: Timer?
     private var lintTask: Task<Void, Never>?
     private var lastLintError: String?
     let log = DebugLog()
     private lazy var autoCommitter = AutoCommitter(log: log)
 
     var text: String { document?.text ?? "" }
+    var errorMessage: String? {
+        guard let selectedFile, document == nil else { return nil }
+        return "Cannot open \(selectedFile.lastPathComponent) as UTF-8 text."
+    }
     var panel: UIState.Panel? { ui.panel }
 
     init() {
@@ -312,7 +314,6 @@ final class Workspace: ObservableObject {
         document = Document(url: url)
         if document == nil {
             log.error("Couldn't open \(url.lastPathComponent) as UTF-8 text")
-            errorMessage = "Cannot open \(url.lastPathComponent) as UTF-8 text."
         }
     }
 
@@ -323,29 +324,26 @@ final class Workspace: ObservableObject {
         selectedFile = nil
         document = nil
         saveFailed = false
-        errorMessage = nil
     }
 
     private func documentDidChange(from old: Document?) {
         let isNewFile = document?.url != old?.url
         guard isNewFile || document?.text != old?.text else { return }
-        lintTimer?.invalidate()
         lintTask?.cancel()
         if isNewFile {
             lint = nil
             runLint()
         } else {
-            lintTimer = Timer.scheduledTimer(withTimeInterval: Self.lintDelay, repeats: false) { [weak self] _ in
-                MainActor.assumeIsolated { self?.runLint() }
-            }
+            runLint(after: Self.lintDelay)
         }
     }
 
-    private func runLint() {
+    private func runLint(after delay: Duration = .zero) {
         guard let textlint, let document else { return }
         let text = document.text
         let file = document.url
         lintTask = Task {
+            guard (try? await Task.sleep(for: delay)) != nil else { return }
             do {
                 let diagnostics = try await textlint.lint(text, of: file)
                 lint = Lint(file: file, text: text, diagnostics: diagnostics)
