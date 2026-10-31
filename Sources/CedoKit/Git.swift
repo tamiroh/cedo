@@ -2,9 +2,7 @@ import Foundation
 
 public struct Commit: Identifiable, Hashable {
     public let hash: String
-    public let shortHash: String
-    public let author: String
-    public let date: String
+    public let date: Date
     public let subject: String
     /// The file's path at this commit, relative to the repository root.
     public let path: String
@@ -23,7 +21,7 @@ public enum Git {
         let output = try await run(
             [
                 "log", "--follow", "--no-color", "--name-only",
-                "--format=%x1e%H%x1f%h%x1f%an%x1f%ar%x1f%s",
+                "--format=%x1e%H%x1f%at%x1f%s",
                 "--", file.lastPathComponent,
             ],
             in: file.deletingLastPathComponent()
@@ -32,10 +30,9 @@ public enum Git {
             let lines = record.split(separator: "\n")
             guard let header = lines.first, let path = lines.dropFirst().first else { return nil }
             let fields = header.split(separator: "\u{1f}", omittingEmptySubsequences: false).map(String.init)
-            guard fields.count == 5 else { return nil }
+            guard fields.count == 3, let seconds = TimeInterval(fields[1]) else { return nil }
             return Commit(
-                hash: fields[0], shortHash: fields[1], author: fields[2],
-                date: fields[3], subject: fields[4], path: String(path)
+                hash: fields[0], date: Date(timeIntervalSince1970: seconds), subject: fields[2], path: String(path)
             )
         }
     }

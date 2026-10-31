@@ -116,7 +116,7 @@ private struct CommitRow: View {
                     .font(.system(size: 13))
                     .foregroundStyle(Theme.text)
                     .lineLimit(1)
-                Text("\(commit.shortHash) · \(commit.author) · \(commit.date)")
+                Text(Self.timestamp(of: commit.date))
                     .font(.system(size: 12))
                     .foregroundStyle(Theme.muted)
                     .lineLimit(1)
@@ -132,6 +132,17 @@ private struct CommitRow: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
+    }
+
+    /// Such as "10/30 14:32 · 11 hours ago", with the year only for earlier years.
+    static func timestamp(of date: Date, now: Date = .now) -> String {
+        let format: Date.FormatString =
+            Calendar.current.isDate(date, equalTo: now, toGranularity: .year)
+            ? "\(month: .defaultDigits)/\(day: .defaultDigits) \(hour: .twoDigits(clock: .twentyFourHour, hourCycle: .zeroBased)):\(minute: .twoDigits)"
+            : "\(year: .defaultDigits)/\(month: .twoDigits)/\(day: .twoDigits) \(hour: .twoDigits(clock: .twentyFourHour, hourCycle: .zeroBased)):\(minute: .twoDigits)"
+        let absolute = date.formatted(.verbatim(format, timeZone: .current, calendar: .current))
+        let relative = date.formatted(.relative(presentation: .numeric).locale(Locale(identifier: "en_US")))
+        return "\(absolute) · \(relative)"
     }
 }
 
