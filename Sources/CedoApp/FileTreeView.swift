@@ -7,6 +7,9 @@ struct FileTreeView: View {
     @State private var expanded: Set<URL> = []
 
     var body: some View {
+        let openFile = workspace.selectedFile.flatMap { file in
+            workspace.document.map { OpenFile(url: file, count: CharacterCount.of($0.text)) }
+        }
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 ForEach(rows) { row in
@@ -14,8 +17,7 @@ struct FileTreeView: View {
                         row: row,
                         isExpanded: expanded.contains(row.id),
                         isSelected: workspace.selectedFile == row.id,
-                        editedCount: workspace.selectedFile == row.id
-                            ? workspace.document.map { CharacterCount.of($0.text) } : nil
+                        openFile: openFile
                     ) {
                         if row.node.isDirectory {
                             toggle(row.id)
@@ -77,12 +79,17 @@ private struct Row: Identifiable {
     var id: URL { node.url }
 }
 
+/// The file in the editor, counted from its text, which can be ahead of what is saved.
+private struct OpenFile {
+    let url: URL
+    let count: Int
+}
+
 private struct FileRow: View {
     let row: Row
     let isExpanded: Bool
     let isSelected: Bool
-    /// The count of the text open in the editor, which can be ahead of the file.
-    let editedCount: Int?
+    let openFile: OpenFile?
     let action: () -> Void
     @State private var hovering = false
     @State private var savedCount: Int?
@@ -101,7 +108,7 @@ private struct FileRow: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
                 Spacer(minLength: 0)
-                if !row.node.isDirectory, let count = editedCount ?? savedCount {
+                if let count {
                     Text(count.formatted())
                         .font(.system(size: 11).monospacedDigit())
                         .foregroundStyle(Theme.muted)
@@ -119,16 +126,38 @@ private struct FileRow: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
-        // Counted again once the file is no longer open, as it was saved on leaving
-        .task(id: CountKey(node: row.node, isEdited: editedCount != nil)) {
-            guard !row.node.isDirectory, editedCount == nil else { return }
-            let file = row.node.url
-            savedCount = await Task.detached { CharacterCount.of(file: file) }.value
+        // Counted again when the open file comes or goes, as it is saved on leaving
+        .task(id: CountKey(node: row.node, openFile: openFileWithin?.url)) {
+            let url = row.id
+            let excluded = openFileWithin?.url
+            if row.node.isDirectory {
+                let includesHiddenFiles = row.node.includesHiddenFiles
+                savedCount = await Task.detached {
+                    CharacterCount.of(folder: url, includesHiddenFiles: includesHiddenFiles, excluding: excluded)
+                }.value
+            } else if excluded == nil {
+                savedCount = await Task.detached { CharacterCount.of(file: url) }.value
+            }
         }
+    }
+
+    /// The open file, if it is this file or inside this folder.
+    private var openFileWithin: OpenFile? {
+        guard let openFile else { return nil }
+        let isWithin =
+            row.node.isDirectory ? openFile.url.path.hasPrefix(row.id.path + "/") : openFile.url == row.id
+        return isWithin ? openFile : nil
+    }
+
+    private var count: Int? {
+        if !row.node.isDirectory, let openFileWithin {
+            return openFileWithin.count
+        }
+        return savedCount.map { $0 + (openFileWithin?.count ?? 0) }
     }
 
     private struct CountKey: Hashable {
         let node: FileNode
-        let isEdited: Bool
+        let openFile: URL?
     }
 }
