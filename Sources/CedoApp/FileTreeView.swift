@@ -32,7 +32,10 @@ struct FileTreeView: View {
                         Button("New File…") {
                             workspace.newFile(in: row.node.isDirectory ? row.id : row.id.deletingLastPathComponent())
                         }
-                        if !row.node.isDirectory {
+                        if row.node.isDirectory {
+                            Button("Read Through") { workspace.readThrough(row.id) }
+                                .disabled(row.node.readThroughFiles == nil)
+                        } else {
                             Button("Pin as Note") { workspace.pinNote(row.id) }
                         }
                     }

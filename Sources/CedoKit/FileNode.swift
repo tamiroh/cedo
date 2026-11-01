@@ -31,6 +31,17 @@ public final class FileNode: Identifiable, Hashable {
         }
     }()
 
+    /// The files to read through one after another, or nil for a folder with subfolders, which reading
+    /// through does not cover yet. Hidden folders and those of tools don't count as subfolders.
+    public var readThroughFiles: [FileNode]? {
+        guard let children else { return nil }
+        let files = children.filter { !$0.isDirectory }
+        let hasSubfolders = children.contains {
+            $0.isDirectory && !$0.name.hasPrefix(".") && !CharacterCount.skippedFolders.contains($0.name)
+        }
+        return hasSubfolders || files.isEmpty ? nil : files
+    }
+
     // Compared by identity, so a freshly read tree always counts as a change and SwiftUI redraws it
     public static func == (lhs: FileNode, rhs: FileNode) -> Bool { lhs === rhs }
     public func hash(into hasher: inout Hasher) { hasher.combine(ObjectIdentifier(self)) }

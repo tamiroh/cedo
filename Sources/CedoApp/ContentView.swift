@@ -78,7 +78,12 @@ struct ContentView: View {
     private var main: some View {
         let margin = textMargin
         VStack(alignment: .leading, spacing: 0) {
-            if let file = workspace.selectedFile {
+            if let folder = workspace.readThroughFolder {
+                readThroughHeader(for: folder)
+                    .padding(.horizontal, CodeTextView.textInset.width)
+                ReadThroughView(folder: folder, horizontalInset: margin)
+                    .id(folder)
+            } else if let file = workspace.selectedFile {
                 header(for: file)
                     .padding(.horizontal, CodeTextView.textInset.width)
                 if workspace.ui.showsHistory {
@@ -205,6 +210,20 @@ struct ContentView: View {
                             .onEnded { _ in dragStartWidth = nil }
                     )
             }
+    }
+
+    private func readThroughHeader(for folder: URL) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(folder.lastPathComponent)
+                .font(.system(size: 16, weight: .semibold))
+                .lineLimit(1)
+            Text("Read Through")
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.muted)
+            Spacer(minLength: 0)
+        }
+        .frame(height: Self.headerHeight)
+        .padding(.bottom, 12)
     }
 
     private func header(for file: URL) -> some View {

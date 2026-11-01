@@ -29,6 +29,8 @@ final class Workspace: ObservableObject {
         didSet { ui.save() }
     }
     @Published private(set) var historyVersion = 0
+    /// Shown in place of the editor until a file is selected.
+    @Published private(set) var readThroughFolder: URL?
 
     private var saveTimer: Timer?
     private var unsavedSince: Date?
@@ -244,6 +246,7 @@ final class Workspace: ObservableObject {
     func open(folder: URL) {
         guard saveBeforeLeaving() else { return }
         autoCommitter.flush()
+        readThroughFolder = nil
         log.info("Opened folder \(folder.path)")
         root = FileNode(url: folder, includesHiddenFiles: ui.showsHiddenFiles)
         textlint = Textlint(root: folder)
@@ -268,7 +271,16 @@ final class Workspace: ObservableObject {
         }
     }
 
+    func readThrough(_ folder: URL) {
+        save()
+        readThroughFolder = folder
+        log.info("Reading through \(folder.lastPathComponent)")
+    }
+
     func select(_ url: URL?) {
+        if url != nil {
+            readThroughFolder = nil
+        }
         guard url != selectedFile else { return }
         guard let url, !isDirectory(url) else { return }
         guard saveBeforeLeaving() else { return }

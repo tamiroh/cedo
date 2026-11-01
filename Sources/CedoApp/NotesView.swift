@@ -68,7 +68,7 @@ private struct NoteView: View {
             ScrollView {
                 Group {
                     if let text {
-                        Text(styled(text))
+                        Text(highlighted(text, by: workspace.configuration))
                             .textSelection(.enabled)
                     } else {
                         Text("Can't read \(file.lastPathComponent).")
@@ -162,25 +162,6 @@ private struct NoteView: View {
         modificationDate = date
         savedText = (try? Data(contentsOf: file)).flatMap { String(data: $0, encoding: .utf8) }
     }
-
-    private func styled(_ text: String) -> AttributedString {
-        var result = AttributedString(text)
-        guard let configuration = workspace.configuration else { return result }
-        for match in configuration.highlightMatches(in: text) {
-            guard let range = Range(match.range, in: result) else { continue }
-            let highlight = configuration.highlights[match.highlight]
-            if let color = highlight.color {
-                result[range].foregroundColor = Color(hex: color)
-            }
-            if let background = highlight.background {
-                result[range].backgroundColor = Color(hex: background)
-            }
-            if highlight.color == nil, highlight.background == nil {
-                result[range].backgroundColor = Theme.selection
-            }
-        }
-        return result
-    }
 }
 
 extension View {
@@ -193,4 +174,24 @@ extension View {
             }
         }
     }
+}
+
+/// The text with the highlights of `.cedo.json`, for views that show text without editing it.
+func highlighted(_ text: String, by configuration: Configuration?) -> AttributedString {
+    var result = AttributedString(text)
+    guard let configuration else { return result }
+    for match in configuration.highlightMatches(in: text) {
+        guard let range = Range(match.range, in: result) else { continue }
+        let highlight = configuration.highlights[match.highlight]
+        if let color = highlight.color {
+            result[range].foregroundColor = Color(hex: color)
+        }
+        if let background = highlight.background {
+            result[range].backgroundColor = Color(hex: background)
+        }
+        if highlight.color == nil, highlight.background == nil {
+            result[range].backgroundColor = Theme.selection
+        }
+    }
+    return result
 }
