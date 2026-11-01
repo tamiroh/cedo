@@ -13,7 +13,9 @@ struct FileTreeView: View {
                     FileRow(
                         row: row,
                         isExpanded: expanded.contains(row.id),
-                        isSelected: workspace.selectedFile == row.id
+                        isSelected: workspace.selectedFile == row.id,
+                        editedCount: workspace.selectedFile == row.id
+                            ? workspace.document.map { CharacterCount.of($0.text) } : nil
                     ) {
                         if row.node.isDirectory {
                             toggle(row.id)
@@ -79,8 +81,11 @@ private struct FileRow: View {
     let row: Row
     let isExpanded: Bool
     let isSelected: Bool
+    /// The count of the text open in the editor, which can be ahead of the file.
+    let editedCount: Int?
     let action: () -> Void
     @State private var hovering = false
+    @State private var savedCount: Int?
 
     var body: some View {
         Button(action: action) {
@@ -96,6 +101,12 @@ private struct FileRow: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
                 Spacer(minLength: 0)
+                if !row.node.isDirectory, let count = editedCount ?? savedCount {
+                    Text(count.formatted())
+                        .font(.system(size: 11).monospacedDigit())
+                        .foregroundStyle(Theme.muted)
+                        .layoutPriority(1)
+                }
             }
             .padding(.vertical, 5)
             .padding(.leading, 4 + CGFloat(row.depth) * 12)
@@ -108,5 +119,16 @@ private struct FileRow: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
+        // Counted again once the file is no longer open, as it was saved on leaving
+        .task(id: CountKey(node: row.node, isEdited: editedCount != nil)) {
+            guard !row.node.isDirectory, editedCount == nil else { return }
+            let file = row.node.url
+            savedCount = await Task.detached { CharacterCount.of(file: file) }.value
+        }
+    }
+
+    private struct CountKey: Hashable {
+        let node: FileNode
+        let isEdited: Bool
     }
 }
