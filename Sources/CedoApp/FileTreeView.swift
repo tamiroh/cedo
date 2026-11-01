@@ -27,9 +27,13 @@ struct FileTreeView: View {
                             workspace.select(row.id)
                         }
                     }
+                    .onDrag { NSItemProvider(object: row.id as NSURL) }
                     .contextMenu {
                         Button("New File…") {
                             workspace.newFile(in: row.node.isDirectory ? row.id : row.id.deletingLastPathComponent())
+                        }
+                        if !row.node.isDirectory {
+                            Button("Pin as Note") { workspace.pinNote(row.id) }
                         }
                     }
                 }

@@ -6,6 +6,14 @@ struct UIState: Codable {
         case log
     }
 
+    struct Note: Codable, Equatable {
+        static let defaultSize = CGSize(width: 260, height: 300)
+
+        let path: String
+        /// In the editor area. Nil until the note is moved, so it first opens beside the text.
+        var frame: CGRect?
+    }
+
     var folderPath: String?
     var filePaths: [String: String] = [:]
     var panel: Panel?
@@ -14,6 +22,9 @@ struct UIState: Codable {
     var showsHiddenFiles = false
     /// Full-width characters per line, or nil to fill the window.
     var textColumns: Int?
+    /// By folder path, the frontmost last.
+    var notes: [String: [Note]] = [:]
+    var showsNotes = true
 
     private static let key = "uiState"
 
@@ -31,6 +42,8 @@ struct UIState: Codable {
         showsHiddenFiles =
             try container.decodeIfPresent(Bool.self, forKey: .showsHiddenFiles) ?? defaults.showsHiddenFiles
         textColumns = try container.decodeIfPresent(Int.self, forKey: .textColumns)
+        notes = try container.decodeIfPresent([String: [Note]].self, forKey: .notes) ?? defaults.notes
+        showsNotes = try container.decodeIfPresent(Bool.self, forKey: .showsNotes) ?? defaults.showsNotes
     }
 
     static func load() -> UIState {

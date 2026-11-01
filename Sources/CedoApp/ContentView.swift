@@ -19,6 +19,18 @@ struct ContentView: View {
                 }
             main
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .overlay {
+                    if workspace.ui.showsNotes {
+                        NotesView()
+                    }
+                }
+                .dropDestination(for: URL.self) { files, location in
+                    guard workspace.root != nil else { return false }
+                    for (index, file) in files.enumerated() {
+                        workspace.pinNote(file, at: CGPoint(x: location.x + CGFloat(index) * 24, y: location.y))
+                    }
+                    return true
+                }
             if let panel = workspace.panel {
                 self.panel(panel)
                     .padding(.top, 36)

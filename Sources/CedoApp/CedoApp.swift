@@ -77,6 +77,9 @@ struct CedoApp: App {
                     workspace.toggle(.log)
                 }
                 .keyboardShortcut("l", modifiers: [.option, .command])
+                Button(workspace.ui.showsNotes ? "Hide Notes" : "Show Notes") { workspace.toggleNotes() }
+                    .keyboardShortcut("n", modifiers: [.option, .command])
+                    .disabled(workspace.root == nil)
             }
         }
     }

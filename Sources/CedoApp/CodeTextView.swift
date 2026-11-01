@@ -67,7 +67,7 @@ struct CodeTextView: NSViewRepresentable {
             let textContainer = NSTextContainer(size: NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude))
             textContainer.widthTracksTextView = true
             layoutManager.addTextContainer(textContainer)
-            let textView = NSTextView(frame: .zero, textContainer: textContainer)
+            let textView = EditorTextView(frame: .zero, textContainer: textContainer)
             textView.minSize = .zero
             textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
             textView.isVerticallyResizable = true
@@ -271,5 +271,32 @@ private final class ColumnScrollView: NSScrollView {
         else { return }
         findBar.frame.origin.x = inset
         findBar.frame.size.width = bounds.width - inset * 2
+    }
+}
+
+private final class EditorTextView: NSTextView {
+    // Leaves dropped files to become notes, instead of inserting their paths into the text
+    override var acceptableDragTypes: [NSPasteboard.PasteboardType] {
+        super.acceptableDragTypes.filter { $0 != .fileURL && $0.rawValue != "NSFilenamesPboardType" }
+    }
+
+    // Where a note covers the text, the note sets the cursor rather than the I-beam
+    override func cursorUpdate(with event: NSEvent) {
+        if !isCovered(at: event) {
+            super.cursorUpdate(with: event)
+        }
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        if !isCovered(at: event) {
+            super.mouseMoved(with: event)
+        }
+    }
+
+    private func isCovered(at event: NSEvent) -> Bool {
+        guard let contentView = window?.contentView,
+            let hit = contentView.hitTest(contentView.convert(event.locationInWindow, from: nil))
+        else { return false }
+        return !hit.isDescendant(of: self)
     }
 }
