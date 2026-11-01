@@ -57,6 +57,16 @@ struct CedoApp: App {
                     .keyboardShortcut("s")
                     .disabled(workspace.selectedFile == nil)
             }
+            CommandGroup(after: .pasteboard) {
+                Divider()
+                Menu("Find") {
+                    findButton("Find…", .showFindInterface, "f")
+                    findButton("Find and Replace…", .showReplaceInterface, "f", modifiers: [.command, .option])
+                    findButton("Find Next", .nextMatch, "g")
+                    findButton("Find Previous", .previousMatch, "g", modifiers: [.command, .shift])
+                    findButton("Use Selection for Find", .setSearchString, "e")
+                }
+            }
             CommandGroup(before: .toolbar) {
                 Button(workspace.panel == .terminal ? "Hide Terminal" : "Show Terminal") {
                     workspace.toggle(.terminal)
@@ -69,5 +79,17 @@ struct CedoApp: App {
                 .keyboardShortcut("l", modifiers: [.option, .command])
             }
         }
+    }
+
+    private func findButton(
+        _ title: String, _ action: NSTextFinder.Action, _ key: KeyEquivalent, modifiers: EventModifiers = .command
+    ) -> some View {
+        Button(title) {
+            // The text view reads which action to take from the sender's tag
+            let sender = NSMenuItem()
+            sender.tag = action.rawValue
+            NSApp.sendAction(#selector(NSResponder.performTextFinderAction(_:)), to: nil, from: sender)
+        }
+        .keyboardShortcut(key, modifiers: modifiers)
     }
 }

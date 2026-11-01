@@ -73,7 +73,7 @@ struct CodeTextView: NSViewRepresentable {
             textView.isVerticallyResizable = true
             textView.autoresizingMask = .width
 
-            let scrollView = NSScrollView()
+            let scrollView = ColumnScrollView()
             scrollView.hasVerticalScroller = true
             scrollView.documentView = textView
             scrollView.backgroundColor = NSColor(Theme.background)
@@ -99,6 +99,8 @@ struct CodeTextView: NSViewRepresentable {
             textView.isAutomaticTextReplacementEnabled = false
             textView.isAutomaticSpellingCorrectionEnabled = false
             textView.isContinuousSpellCheckingEnabled = false
+            textView.usesFindBar = true
+            textView.isIncrementalSearchingEnabled = true
             CodeTextView.setText(text, in: textView)
             self.document = document
             return scrollView
@@ -111,6 +113,7 @@ struct CodeTextView: NSViewRepresentable {
             guard let textView, let scrollView = textView.enclosingScrollView else { return }
             if textView.textContainerInset.width != horizontalInset {
                 textView.textContainerInset = NSSize(width: horizontalInset, height: CodeTextView.textInset.height)
+                scrollView.tile()
                 setNeedsToolTips()
             }
             let isNewDocument = self.document != document
@@ -256,5 +259,17 @@ struct CodeTextView: NSViewRepresentable {
         ) -> String {
             toolTips[tag] ?? ""
         }
+    }
+}
+
+/// Lines the find bar up with the column of text instead of the full width.
+private final class ColumnScrollView: NSScrollView {
+    override func tile() {
+        super.tile()
+        guard isFindBarVisible, let findBar = findBarView,
+            let inset = (documentView as? NSTextView)?.textContainerInset.width
+        else { return }
+        findBar.frame.origin.x = inset
+        findBar.frame.size.width = bounds.width - inset * 2
     }
 }

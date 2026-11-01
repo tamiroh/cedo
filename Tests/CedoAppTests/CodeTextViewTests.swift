@@ -93,6 +93,16 @@ struct CodeTextViewTests {
         #expect(editor.textView.undoManager?.canUndo == false)
     }
 
+    @Test func findsInTheFindBar() {
+        let editor = Editor("hello world")
+        let sender = NSMenuItem()
+        sender.tag = NSTextFinder.Action.showFindInterface.rawValue
+
+        editor.textView.performTextFinderAction(sender)
+
+        #expect(editor.textView.enclosingScrollView?.isFindBarVisible == true)
+    }
+
     @Test func highlightsMatchesAndFollowsEdits() throws {
         let editor = Editor("手順 TODO")
         let configuration = try Configuration(
