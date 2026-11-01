@@ -5,6 +5,7 @@ struct FileTreeView: View {
     @EnvironmentObject private var workspace: Workspace
     let root: FileNode
     @State private var expanded: Set<URL> = []
+    @State private var showsCounts = false
 
     var body: some View {
         let openFile = workspace.selectedFile.flatMap { file in
@@ -17,7 +18,8 @@ struct FileTreeView: View {
                         row: row,
                         isExpanded: expanded.contains(row.id),
                         isSelected: workspace.selectedFile == row.id,
-                        openFile: openFile
+                        openFile: openFile,
+                        showsCount: showsCounts
                     ) {
                         if row.node.isDirectory {
                             toggle(row.id)
@@ -33,6 +35,10 @@ struct FileTreeView: View {
                 }
             }
             .padding(.bottom, 16)
+        }
+        // Counts show only while the pointer is over the tree, so they stay out of the way while writing
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) { showsCounts = hovering }
         }
         .contextMenu {
             Button("New File…") { workspace.newFile(in: root.url) }
@@ -90,6 +96,7 @@ private struct FileRow: View {
     let isExpanded: Bool
     let isSelected: Bool
     let openFile: OpenFile?
+    let showsCount: Bool
     let action: () -> Void
     @State private var hovering = false
     @State private var savedCount: Int?
@@ -113,6 +120,8 @@ private struct FileRow: View {
                         .font(.system(size: 11).monospacedDigit())
                         .foregroundStyle(Theme.muted)
                         .layoutPriority(1)
+                        // Hidden without leaving the layout, so names do not shift as the counts come and go
+                        .opacity(showsCount ? 1 : 0)
                 }
             }
             .padding(.vertical, 5)
