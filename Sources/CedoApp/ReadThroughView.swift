@@ -64,7 +64,6 @@ struct ReadThroughView: View {
         .help("Double-click to open \(file.lastPathComponent)")
     }
 
-    /// Picks up files added, removed or changed outside, reading only the ones that changed.
     private func reload() {
         let node = FileNode(url: folder, includesHiddenFiles: workspace.ui.showsHiddenFiles)
         files = node.readThroughFiles?.map(\.url) ?? []

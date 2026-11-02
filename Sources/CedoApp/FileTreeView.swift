@@ -157,7 +157,6 @@ private struct FileRow: View {
         }
     }
 
-    /// The open file, if it is this file or inside this folder.
     private var openFileWithin: OpenFile? {
         guard let openFile else { return nil }
         let isWithin =

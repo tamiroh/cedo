@@ -10,7 +10,7 @@ struct UIState: Codable {
         static let defaultSize = CGSize(width: 260, height: 300)
 
         let path: String
-        /// In the editor area. Nil until the note is moved, so it first opens beside the text.
+        /// In the window. Nil until the note is moved, so it first opens beside the text.
         var frame: CGRect?
     }
 

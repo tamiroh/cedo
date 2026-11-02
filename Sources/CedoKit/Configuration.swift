@@ -1,6 +1,6 @@
 import Foundation
 
-/// A folder's cedo settings, read from `.cedo.json` in its root:
+/// A folder's Cedo settings, read from `.cedo.json` in its root:
 ///
 ///     { "highlights": [{ "pattern": "TODO", "color": "#e5c07b", "background": "#3a3220" }] }
 public struct Configuration {

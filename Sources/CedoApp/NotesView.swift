@@ -13,7 +13,7 @@ struct NotesView: View {
         }
     }
 
-    /// Kept inside the editor area, so a note never ends up out of reach after the window shrinks.
+    /// Kept inside the window, so a note never ends up out of reach after the window shrinks.
     private func frame(of note: UIState.Note, at index: Int, in bounds: CGSize) -> CGRect {
         let size = note.frame?.size ?? UIState.Note.defaultSize
         // A new note opens at the right of the editor, clear of the side panel
