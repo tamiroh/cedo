@@ -3,10 +3,6 @@ import os
 
 /// Counts characters the way manuscripts usually are: every visible character, leaving out spaces and line breaks.
 public enum CharacterCount {
-    /// Folders of tools and dependencies, which are large and not part of the writing.
-    static let skippedFolders: Set<String> = [
-        ".build", ".git", ".venv", "DerivedData", "Pods", "__pycache__", "node_modules", "venv",
-    ]
     private static let maxFileSize = 5 * 1024 * 1024
     private static let cache = OSAllocatedUnfairLock<[URL: (date: Date, count: Int?)]>(initialState: [:])
 
@@ -28,21 +24,22 @@ public enum CharacterCount {
         return count
     }
 
-    /// The total of the files in a folder and its subfolders, leaving out `excluded`.
-    /// Nil for the folders of tools and dependencies.
+    /// The total of the files in a folder and its subfolders, leaving out `excluded` and the files of tools.
+    /// Nil for the folders of tools.
     public static func of(folder: URL, includesHiddenFiles: Bool, excluding excluded: URL? = nil) -> Int? {
-        guard !skippedFolders.contains(folder.lastPathComponent) else { return nil }
+        guard !FileNode.toolNames.contains(folder.lastPathComponent) else { return nil }
         let enumerator = FileManager.default.enumerator(
             at: folder, includingPropertiesForKeys: [.isDirectoryKey],
             options: includesHiddenFiles ? [] : [.skipsHiddenFiles]
         )
         var total = 0
         while let url = enumerator?.nextObject() as? URL {
-            if (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true {
-                if skippedFolders.contains(url.lastPathComponent) {
+            let isDirectory = (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true
+            if FileNode.toolNames.contains(url.lastPathComponent) {
+                if isDirectory {
                     enumerator?.skipDescendants()
                 }
-            } else if url.standardizedFileURL != excluded?.standardizedFileURL {
+            } else if !isDirectory, url.standardizedFileURL != excluded?.standardizedFileURL {
                 total += of(file: url) ?? 0
             }
         }

@@ -38,6 +38,7 @@ struct FolderCharacterCountTests {
             "章/2.md": "二章 の 本文",
             ".notes.md": "隠し",
             "node_modules/pkg/README.md": "dependency",
+            "package.json": #"{ "private": true }"#,
             "章/.build/out.txt": "generated",
         ] {
             let file = root.appendingPathComponent(path)
