@@ -304,8 +304,9 @@ private final class EditorTextView: NSTextView {
     }
 
     private func isCovered(at event: NSEvent) -> Bool {
-        guard let contentView = window?.contentView,
-            let hit = contentView.hitTest(contentView.convert(event.locationInWindow, from: nil))
+        // hitTest takes a point in the superview's coordinates, which are not flipped like the content view's
+        guard let contentView = window?.contentView, let frameView = contentView.superview,
+            let hit = contentView.hitTest(frameView.convert(event.locationInWindow, from: nil))
         else { return false }
         return !hit.isDescendant(of: self)
     }
