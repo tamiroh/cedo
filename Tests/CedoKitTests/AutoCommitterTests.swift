@@ -35,7 +35,7 @@ struct AutoCommitterTests {
         let committed = try git("show", "--name-only", "--format=", "HEAD")
         #expect(committed.split(separator: "\n") == ["edited.md", "new.md"])
         #expect(try git("log", "-1", "--format=%B").contains("- edited.md (+9 chars)"))
-        // The file staged outside cedo stays staged and uncommitted
+        // The file staged outside Cedo stays staged and uncommitted
         #expect(try git("diff", "--cached", "--name-only") == "staged.md\n")
     }
 

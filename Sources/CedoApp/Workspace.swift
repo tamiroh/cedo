@@ -342,7 +342,7 @@ final class Workspace: ObservableObject {
         }
         switch change {
         case .reloaded:
-            log.info("Reloaded \(checked.url.lastPathComponent) after it changed outside cedo")
+            log.info("Reloaded \(checked.url.lastPathComponent) after it changed outside Cedo")
             saveFailed = false
         case .conflict(let onDisk):
             resolveConflict(in: checked.url, onDisk: onDisk)
@@ -354,20 +354,20 @@ final class Workspace: ObservableObject {
     private func resolveConflict(in url: URL, onDisk: String) {
         isResolvingConflict = true
         defer { isResolvingConflict = false }
-        log.info("\(url.lastPathComponent) changed outside cedo while being edited")
+        log.info("\(url.lastPathComponent) changed outside Cedo while being edited")
 
         let alert = NSAlert()
-        alert.messageText = "\(url.lastPathComponent) was changed outside cedo."
+        alert.messageText = "\(url.lastPathComponent) was changed outside Cedo."
         alert.informativeText = "You were editing it at the same time. Which version do you want to keep?"
         alert.addButton(withTitle: "Keep Mine")
         alert.addButton(withTitle: "Use the Other Version")
         if alert.runModal() == .alertFirstButtonReturn {
             autoCommitter.fileSaved(url)
             autoCommitter.flushAndWait()
-            log.info("Kept the edits in cedo")
+            log.info("Kept the edits in Cedo")
             write(overwritingOutsideChanges: true)
         } else {
-            log.info("Took the version changed outside cedo")
+            log.info("Took the version changed outside Cedo")
             document?.adopt(onDisk)
             saveFailed = false
         }

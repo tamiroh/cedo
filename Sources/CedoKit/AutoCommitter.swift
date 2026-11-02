@@ -1,7 +1,7 @@
 import Foundation
 
 /// A pause is a few idle minutes after saving, switching to another file or folder, or quitting.
-/// Only files saved in cedo are committed; other changes in the repository are left alone.
+/// Only files saved in Cedo are committed; other changes in the repository are left alone.
 @MainActor
 public final class AutoCommitter {
     private static let idleDelay: TimeInterval = 5 * 60

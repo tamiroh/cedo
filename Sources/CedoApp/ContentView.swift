@@ -59,7 +59,7 @@ struct ContentView: View {
 
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(workspace.root?.name ?? "cedo")
+            Text(workspace.root?.name ?? "Cedo")
                 .font(.system(size: 14, weight: .semibold))
                 .lineLimit(1)
                 .padding(.horizontal, 8)

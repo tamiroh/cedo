@@ -32,7 +32,7 @@ struct CedoApp: App {
     @StateObject private var workspace = Workspace()
 
     var body: some Scene {
-        Window("cedo", id: "main") {
+        Window("Cedo", id: "main") {
             ContentView()
                 .environmentObject(workspace)
                 .onAppear {

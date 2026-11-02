@@ -1,4 +1,4 @@
-# cedo
+# Cedo
 
 A “minimal” text editor for long-form writing.
 
@@ -26,7 +26,7 @@ Run directly during development:
 make run
 ```
 
-Build an app bundle at `build/cedo.app`, and open it:
+Build an app bundle at `build/Cedo.app`, and open it:
 
 ```sh
 make app

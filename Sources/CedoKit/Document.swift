@@ -5,7 +5,7 @@ public struct Document: Equatable {
         case saved
         case unchanged
         case conflict(onDisk: String)
-        /// The file was deleted or can no longer be read as UTF-8, so saving would replace what cedo never saw.
+        /// The file was deleted or can no longer be read as UTF-8, so saving would replace what Cedo never saw.
         case unreadable
     }
 

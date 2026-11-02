@@ -1,4 +1,4 @@
-APP := build/cedo.app
+APP := build/Cedo.app
 BIN_DIR = $(shell swift build -c release --show-bin-path)
 INSTALL_DIR ?= /Applications
 
@@ -53,7 +53,7 @@ open: app
 
 .PHONY: install
 install: app
-	rm -rf $(INSTALL_DIR)/cedo.app
+	rm -rf $(INSTALL_DIR)/Cedo.app
 	mv $(APP) $(INSTALL_DIR)/
 
 .PHONY: clean
