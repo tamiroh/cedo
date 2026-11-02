@@ -25,6 +25,7 @@ struct UIState: Codable {
     /// By folder path, the frontmost last.
     var notes: [String: [Note]] = [:]
     var showsNotes = true
+    var isVertical = false
 
     private static let key = "uiState"
 
@@ -44,6 +45,7 @@ struct UIState: Codable {
         textColumns = try container.decodeIfPresent(Int.self, forKey: .textColumns)
         notes = try container.decodeIfPresent([String: [Note]].self, forKey: .notes) ?? defaults.notes
         showsNotes = try container.decodeIfPresent(Bool.self, forKey: .showsNotes) ?? defaults.showsNotes
+        isVertical = try container.decodeIfPresent(Bool.self, forKey: .isVertical) ?? defaults.isVertical
     }
 
     static func load() -> UIState {
