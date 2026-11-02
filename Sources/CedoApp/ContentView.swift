@@ -7,11 +7,12 @@ struct ContentView: View {
     @State private var columnDragStartWidth: CGFloat?
 
     private static let headerHeight: CGFloat = 24
+    private static let sidebarWidth: CGFloat = 260
 
     var body: some View {
         HStack(spacing: 0) {
             sidebar
-                .frame(width: 260)
+                .frame(width: Self.sidebarWidth)
                 .frame(maxHeight: .infinity, alignment: .top)
                 .background(Theme.inset)
                 .overlay(alignment: .trailing) {
@@ -19,15 +20,12 @@ struct ContentView: View {
                 }
             main
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .overlay {
-                    if workspace.ui.showsNotes {
-                        NotesView()
-                    }
-                }
                 .dropDestination(for: URL.self) { files, location in
                     guard workspace.root != nil else { return false }
+                    // Notes are placed in the window, which starts at the sidebar
+                    let x = location.x + Self.sidebarWidth
                     for (index, file) in files.enumerated() {
-                        workspace.pinNote(file, at: CGPoint(x: location.x + CGFloat(index) * 24, y: location.y))
+                        workspace.pinNote(file, at: CGPoint(x: x + CGFloat(index) * 24, y: location.y))
                     }
                     return true
                 }
@@ -39,6 +37,12 @@ struct ContentView: View {
                     .frame(maxHeight: .infinity)
                     .background(Theme.inset)
                     .overlay(alignment: .leading) { panelResizeHandle }
+            }
+        }
+        // Over the whole window, so a note stays on top of the side panel too
+        .overlay {
+            if workspace.ui.showsNotes {
+                NotesView()
             }
         }
         .foregroundStyle(Theme.text)

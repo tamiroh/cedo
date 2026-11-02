@@ -16,9 +16,11 @@ struct NotesView: View {
     /// Kept inside the editor area, so a note never ends up out of reach after the window shrinks.
     private func frame(of note: UIState.Note, at index: Int, in bounds: CGSize) -> CGRect {
         let size = note.frame?.size ?? UIState.Note.defaultSize
+        // A new note opens at the right of the editor, clear of the side panel
+        let panelWidth = workspace.panel == nil ? 0 : workspace.ui.panelWidth
         let origin =
             note.frame?.origin
-            ?? CGPoint(x: bounds.width - size.width - 24, y: 60 + CGFloat(index) * 28)
+            ?? CGPoint(x: bounds.width - panelWidth - size.width - 24, y: 60 + CGFloat(index) * 28)
         return CGRect(
             x: min(max(origin.x, 0), max(bounds.width - 80, 0)),
             y: min(max(origin.y, 0), max(bounds.height - 40, 0)),
