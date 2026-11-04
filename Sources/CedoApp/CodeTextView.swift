@@ -8,7 +8,6 @@ struct CodeTextView: NSViewRepresentable {
     let lint: Workspace.Lint?
     let configuration: Configuration?
     let horizontalInset: CGFloat
-    let isVertical: Bool
     let onChange: (String) -> Void
 
     static let textInset = NSSize(width: 32, height: 12)
@@ -35,7 +34,7 @@ struct CodeTextView: NSViewRepresentable {
         context.coordinator.onChange = onChange
         context.coordinator.update(
             text: text, document: document, lint: lint, configuration: configuration,
-            horizontalInset: horizontalInset, isVertical: isVertical
+            horizontalInset: horizontalInset
         )
     }
 
@@ -109,18 +108,9 @@ struct CodeTextView: NSViewRepresentable {
 
         func update(
             text: String, document: URL, lint: Workspace.Lint?, configuration: Configuration?,
-            horizontalInset: CGFloat, isVertical: Bool = false
+            horizontalInset: CGFloat
         ) {
             guard let textView, let scrollView = textView.enclosingScrollView else { return }
-            if (textView.layoutOrientation == .vertical) != isVertical {
-                // The text view swaps its own sizing for the new direction; the scroll view follows it
-                textView.setLayoutOrientation(isVertical ? .vertical : .horizontal)
-                textView.autoresizingMask = isVertical ? .height : .width
-                scrollView.hasVerticalScroller = !isVertical
-                scrollView.hasHorizontalScroller = isVertical
-                textView.scrollRangeToVisible(NSRange(location: 0, length: 0))
-                setNeedsToolTips()
-            }
             if textView.textContainerInset.width != horizontalInset {
                 textView.textContainerInset = NSSize(width: horizontalInset, height: CodeTextView.textInset.height)
                 scrollView.tile()

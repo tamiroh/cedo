@@ -105,15 +105,9 @@ struct ContentView: View {
                     CodeTextView(
                         text: workspace.text, document: file, lint: workspace.lint,
                         configuration: workspace.configuration, horizontalInset: margin,
-                        isVertical: workspace.ui.isVertical,
                         onChange: workspace.textDidChange
                     )
-                    .overlay {
-                        // Lines run down the window in vertical text, so their length isn't set by the width
-                        if !workspace.ui.isVertical {
-                            columnHandles(margin: margin)
-                        }
-                    }
+                    .overlay { columnHandles(margin: margin) }
                 }
             } else {
                 Text(
@@ -135,7 +129,7 @@ struct ContentView: View {
 
     private var textMargin: CGFloat {
         let minimum = CodeTextView.textInset.width
-        guard let columns = workspace.ui.textColumns, !workspace.ui.isVertical else { return minimum }
+        guard let columns = workspace.ui.textColumns else { return minimum }
         let width = CGFloat(columns) * CodeTextView.characterWidth + 1
         return max(minimum, ((editorWidth - width) / 2).rounded(.down))
     }
