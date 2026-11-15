@@ -11,12 +11,7 @@ A “minimal” text editor for long-form writing.
 ## Requirements
 
 - macOS 14 or later
-- Xcode with Swift 6.0 or later
-- The Metal Toolchain, which the terminal library [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm) needs to build. Install it, again after Xcode updates, with:
-
-  ```sh
-  make setup
-  ```
+- Xcode with Swift 6.2 or later
 
 ## Build and run
 

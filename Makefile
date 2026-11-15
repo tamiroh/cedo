@@ -2,15 +2,6 @@ APP := build/Cedo.app
 BIN_DIR = $(shell swift build -c release --show-bin-path)
 INSTALL_DIR ?= /Applications
 
-# SwiftTerm needs the Metal Toolchain to build, and Xcode updates can remove it
-.PHONY: setup
-setup:
-	@if xcodebuild -showComponent MetalToolchain | grep -q "Status: installed"; then \
-		echo "Metal Toolchain is installed."; \
-	else \
-		xcodebuild -downloadComponent MetalToolchain; \
-	fi
-
 .PHONY: build
 build:
 	swift build
@@ -37,7 +28,6 @@ app:
 	rm -rf $(APP)
 	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
 	cp $(BIN_DIR)/cedo $(APP)/Contents/MacOS/cedo
-	cp -R $(BIN_DIR)/SwiftTerm_SwiftTerm.bundle $(APP)/Contents/Resources/
 	cp Support/Info.plist $(APP)/Contents/Info.plist
 	rm -rf build/AppIcon.iconset
 	mkdir -p build/AppIcon.iconset
