@@ -119,9 +119,17 @@ public final class AutoCommitter {
             summary = EditSummary.describe(diff: diff)
         }
         let message = message(for: changes, summary: summary)
-        try Git.runSync(["commit", "--quiet", "--only", "-m", message, "--"] + paths, in: repository)
+        try Git.runSync(
+            ["commit", "--quiet", "--only", "-m", message, "--"] + paths, in: repository, environment: Self.identity)
         return message
     }
+
+    nonisolated static let identity = [
+        "GIT_AUTHOR_NAME": "Cedo Auto-Committer",
+        "GIT_AUTHOR_EMAIL": "auto-committer@cedo.invalid",
+        "GIT_COMMITTER_NAME": "Cedo Auto-Committer",
+        "GIT_COMMITTER_EMAIL": "auto-committer@cedo.invalid",
+    ]
 
     struct Change {
         let file: URL

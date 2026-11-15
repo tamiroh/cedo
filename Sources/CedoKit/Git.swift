@@ -94,9 +94,14 @@ public enum Git {
     }
 
     @discardableResult
-    static func runSync(_ arguments: [String], in directory: URL) throws -> String {
+    static func runSync(
+        _ arguments: [String], in directory: URL, environment: [String: String] = [:]
+    ) throws -> String {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+        if !environment.isEmpty {
+            process.environment = ProcessInfo.processInfo.environment.merging(environment) { $1 }
+        }
         // Without core.quotePath=false, git escapes non-ASCII paths such as Japanese file names
         process.arguments = ["-C", directory.path, "-c", "core.quotePath=false"] + arguments
         let stdout = Pipe()
