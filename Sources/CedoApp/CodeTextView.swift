@@ -206,6 +206,12 @@ struct CodeTextView: NSViewRepresentable {
             let all = NSRange(location: 0, length: (text as NSString).length)
             layoutManager.removeTemporaryAttribute(.foregroundColor, forCharacterRange: all)
             layoutManager.removeTemporaryAttribute(.backgroundColor, forCharacterRange: all)
+            if let document, MarkdownSyntax.applies(to: document) {
+                for span in MarkdownSyntax.spans(in: text) {
+                    layoutManager.addTemporaryAttribute(
+                        .foregroundColor, value: NSColor(Theme.markdown(span.style)), forCharacterRange: span.range)
+                }
+            }
             guard let configuration else { return }
             for match in configuration.highlightMatches(in: text) {
                 let highlight = configuration.highlights[match.highlight]
