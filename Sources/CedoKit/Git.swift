@@ -31,7 +31,7 @@ public enum Git {
             guard let header = lines.first, let path = path(inPatch: lines.dropFirst()) else { return nil }
             let fields = header.split(separator: "\u{1f}", omittingEmptySubsequences: false).map(String.init)
             guard fields.count == 3, let seconds = TimeInterval(fields[1]) else { return nil }
-            let size = size(of: EditSummary.edits(in: lines.dropFirst().joined(separator: "\n")))
+            let size = size(of: Diff.edits(in: lines.dropFirst().joined(separator: "\n")))
             return Commit(
                 hash: fields[0], date: Date(timeIntervalSince1970: seconds), subject: fields[2],
                 added: size.added, removed: size.removed, path: path
@@ -56,11 +56,11 @@ public enum Git {
     }
 
     /// Counts only the changed part of a rewritten line, so fixing one character in a paragraph counts as one.
-    static func size(of edits: [EditSummary.Edit]) -> (added: Int, removed: Int) {
+    static func size(of edits: [Diff.Edit]) -> (added: Int, removed: Int) {
         edits.reduce(into: (added: 0, removed: 0)) { size, edit in
             switch edit {
             case .rewritten(let old, let new):
-                let (removed, added) = EditSummary.difference(old, new)
+                let (removed, added) = Diff.changedTexts(old, new)
                 size.removed += removed.count
                 size.added += added.count
             case .removed(let text): size.removed += text.count

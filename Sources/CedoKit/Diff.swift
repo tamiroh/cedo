@@ -2,6 +2,13 @@ import Foundation
 
 /// A unified diff read into hunks, without the headers.
 public struct Diff: Equatable {
+    /// A changed line, with rewrites paired up and blank lines left out.
+    enum Edit: Equatable {
+        case rewritten(String, String)
+        case removed(String)
+        case added(String)
+    }
+
     public struct Hunk: Equatable {
         /// The hunk's first line in the new version.
         public let line: Int
@@ -50,6 +57,38 @@ public struct Diff: Equatable {
             end += 1
         }
         return (start..<old.count - end, start..<new.count - end)
+    }
+
+    static func edits(in patch: String) -> [Edit] {
+        var edits: [Edit] = []
+        var removed: [String] = []
+        var added: [String] = []
+        func flush() {
+            let pairs = min(removed.count, added.count)
+            edits += (0..<pairs).map { .rewritten(removed[$0], added[$0]) }
+            edits += removed.dropFirst(pairs).map { .removed($0) }
+            edits += added.dropFirst(pairs).map { .added($0) }
+            removed = []
+            added = []
+        }
+        for line in patch.split(separator: "\n", omittingEmptySubsequences: false) {
+            if line.hasPrefix("---") || line.hasPrefix("+++") { continue }
+            let text = line.dropFirst().trimmingCharacters(in: .whitespaces)
+            if line.hasPrefix("-") {
+                if !text.isEmpty { removed.append(text) }
+            } else if line.hasPrefix("+") {
+                if !text.isEmpty { added.append(text) }
+            } else if !line.hasPrefix("\\") {
+                flush()
+            }
+        }
+        flush()
+        return edits
+    }
+
+    static func changedTexts(_ old: String, _ new: String) -> (old: String, new: String) {
+        let ranges = changedRanges(old, new)
+        return (String(Array(old)[ranges.old]), String(Array(new)[ranges.new]))
     }
 
     private static func newStart(in header: Substring) -> Int? {

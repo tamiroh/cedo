@@ -40,4 +40,25 @@ struct DiffTests {
 
         #expect(diff.hunks[0].lines.map(\.changed) == [1..<2, 1..<2, 1..<2, 1..<2, nil])
     }
+
+    @Test func readsRewritesRemovalsAndAdditions() {
+        let patch = """
+            diff --git a/a.md b/a.md
+            --- a/a.md
+            +++ b/a.md
+            @@ -3 +3 @@
+            -古い手順
+            +新しい手順
+            @@ -10,2 +9,0 @@
+            -消したコード例
+            -
+            @@ -20,0 +18 @@
+            +足した注意書き
+            \\ No newline at end of file
+            """
+        #expect(
+            Diff.edits(in: patch) == [
+                .rewritten("古い手順", "新しい手順"), .removed("消したコード例"), .added("足した注意書き"),
+            ])
+    }
 }
