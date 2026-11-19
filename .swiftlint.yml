@@ -10,6 +10,11 @@ disabled_rules:
   - closure_parameter_position
   - line_length
 
+opt_in_rules:
+  - async_without_await
+  - unneeded_escaping
+  - unneeded_throws_rethrows
+
 file_length: 500
 
 identifier_name:
