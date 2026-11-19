@@ -5,6 +5,8 @@ version: 'v0.0.3'
 workflows:
     '.github/workflows/ci.yml':
         - 'actions/checkout@v4.4.0'
+    '.github/workflows/release.yml':
+        - 'actions/checkout@v4.4.0'
 dependencies:
     'actions/checkout@v4.4.0':
         ref: 'v4.4.0'

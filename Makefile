@@ -1,4 +1,5 @@
 APP := build/Cedo.app
+DMG := build/Cedo.dmg
 BIN_DIR = $(shell swift build -c release --show-bin-path)
 INSTALL_DIR ?= /Applications
 VERSION ?= $(patsubst v%,%,$(or $(shell git describe --tags --abbrev=0 2>/dev/null),v0.0.0))
@@ -40,6 +41,15 @@ app:
 		sips -z $$((size * 2)) $$((size * 2)) Support/AppIcon.png --out build/AppIcon.iconset/icon_$${size}x$${size}@2x.png > /dev/null; \
 	done
 	iconutil -c icns build/AppIcon.iconset -o $(APP)/Contents/Resources/AppIcon.icns
+	codesign --force --sign - $(APP)
+
+.PHONY: dmg
+dmg: app
+	rm -rf build/dmg $(DMG)
+	mkdir -p build/dmg
+	cp -R $(APP) build/dmg/
+	ln -s /Applications build/dmg/Applications
+	hdiutil create -volname Cedo -srcfolder build/dmg -format UDZO $(DMG)
 
 .PHONY: open
 open: app
