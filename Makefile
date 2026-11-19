@@ -1,6 +1,7 @@
 APP := build/Cedo.app
 BIN_DIR = $(shell swift build -c release --show-bin-path)
 INSTALL_DIR ?= /Applications
+VERSION ?= $(patsubst v%,%,$(or $(shell git describe --tags --abbrev=0 2>/dev/null),v0.0.0))
 
 .PHONY: build
 build:
@@ -31,6 +32,7 @@ app:
 	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
 	cp $(BIN_DIR)/cedo $(APP)/Contents/MacOS/cedo
 	cp Support/Info.plist $(APP)/Contents/Info.plist
+	/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $(VERSION)" -c "Set :CFBundleVersion $(VERSION)" $(APP)/Contents/Info.plist
 	rm -rf build/AppIcon.iconset
 	mkdir -p build/AppIcon.iconset
 	for size in 16 32 128 256 512; do \
