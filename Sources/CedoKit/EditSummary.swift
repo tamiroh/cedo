@@ -35,12 +35,12 @@ enum EditSummary {
         }
         guard rewrites.count == edits.count, let first = rewrites.first else { return nil }
 
-        let (from, to) = Diff.changedTexts(first.0, first.1)
-        let occurrences = rewrites.reduce(0) { $0 + $1.0.components(separatedBy: from).count - 1 }
-        if !from.isEmpty, occurrences >= 2,
-            rewrites.allSatisfy({ $0.0.replacingOccurrences(of: from, with: to) == $0.1 })
+        let (before, after) = Diff.changedTexts(first.0, first.1)
+        let occurrences = rewrites.reduce(0) { $0 + $1.0.components(separatedBy: before).count - 1 }
+        if !before.isEmpty, occurrences >= 2,
+            rewrites.allSatisfy({ $0.0.replacingOccurrences(of: before, with: after) == $0.1 })
         {
-            return language.renamed(from, to)
+            return language.renamed(before, after)
         }
 
         if rewrites.allSatisfy({

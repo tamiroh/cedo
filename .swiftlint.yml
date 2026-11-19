@@ -9,8 +9,12 @@ included:
 identifier_name:
   excluded:
     - id
+    - ui
     - x
     - y
+
+nesting:
+  type_level: 2
 
 trailing_comma:
   mandatory_comma: true

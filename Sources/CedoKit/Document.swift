@@ -84,8 +84,8 @@ public struct Document: Equatable {
         return (text, hasByteOrderMark)
     }
 
-    static func same(_ a: String, _ b: String) -> Bool {
-        a.utf8.elementsEqual(b.utf8)
+    static func same(_ lhs: String, _ rhs: String) -> Bool {
+        lhs.utf8.elementsEqual(rhs.utf8)
     }
 
     private static func modificationDate(of url: URL) -> Date? {
