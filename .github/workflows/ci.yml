@@ -6,12 +6,24 @@ on:
   pull_request:
 
 jobs:
-  build:
+  lint:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4.4.0
       - run: swift --version
       - run: make lint
+
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4.4.0
+      - run: swift --version
       - run: make build
       - run: make test
+
+  app:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4.4.0
+      - run: swift --version
       - run: make app
