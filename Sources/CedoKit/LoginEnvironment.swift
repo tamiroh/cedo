@@ -29,7 +29,7 @@ public enum LoginEnvironment {
         process.waitUntilExit()
         timeout.cancel()
 
-        let parts = String(decoding: data, as: UTF8.self).components(separatedBy: marker)
+        let parts = String(lossyUTF8: data).components(separatedBy: marker)
         guard process.terminationStatus == 0, parts.count == 3 else { return nil }
         var variables: [String: String] = [:]
         for entry in parts[1].split(separator: "\0") {

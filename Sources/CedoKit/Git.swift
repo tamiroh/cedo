@@ -115,12 +115,12 @@ public enum Git {
         process.waitUntilExit()
 
         guard process.terminationStatus == 0 else {
-            let message = String(decoding: error, as: UTF8.self)
+            let message = String(lossyUTF8: error)
             if message.contains("not a git repository") {
                 throw Failure(message: "This file is not in a Git repository.")
             }
             throw Failure(message: message.trimmingCharacters(in: .whitespacesAndNewlines))
         }
-        return String(decoding: output, as: UTF8.self)
+        return String(lossyUTF8: output)
     }
 }

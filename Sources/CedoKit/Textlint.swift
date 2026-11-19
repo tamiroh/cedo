@@ -54,7 +54,7 @@ public struct Textlint: Sendable {
         do {
             return try Self.parse(output)
         } catch {
-            let message = String(decoding: output, as: UTF8.self)
+            let message = String(lossyUTF8: output)
             // A file type that no textlint plugin reads, such as source code
             if message.contains("Not found available plugin") {
                 return []
@@ -91,7 +91,7 @@ public struct Textlint: Sendable {
         // textlint exits with 1 when it finds problems, which is not a failure
         guard process.terminationStatus == 0 || process.terminationStatus == 1 else {
             let error = error.withLock { $0 }
-            let message = String(decoding: error.isEmpty ? output : error, as: UTF8.self)
+            let message = String(lossyUTF8: error.isEmpty ? output : error)
             throw Failure(message: message.trimmingCharacters(in: .whitespacesAndNewlines))
         }
         return output

@@ -103,7 +103,7 @@ public final class AutoCommitter {
             }
             let old = Git.headVersion(of: file) ?? ""
             guard let data = try? Data(contentsOf: file) else { continue }
-            let new = String(decoding: data, as: UTF8.self)
+            let new = String(lossyUTF8: data)
             guard !Document.same(new, old) else { continue }
             changes.append(Change(file: file, characterDelta: new.count - old.count))
         }
