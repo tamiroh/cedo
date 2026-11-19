@@ -6,6 +6,12 @@ included:
   - Support
   - Package.swift
 
+disabled_rules:
+  - closure_parameter_position
+  - line_length
+
+file_length: 500
+
 identifier_name:
   excluded:
     - id
@@ -16,5 +22,12 @@ identifier_name:
 nesting:
   type_level: 2
 
+opening_brace:
+  ignore_multiline_function_signatures: true
+  ignore_multiline_statement_conditions: true
+  ignore_multiline_type_headers: true
+
 trailing_comma:
   mandatory_comma: true
+
+type_body_length: 450

@@ -146,7 +146,7 @@ private final class Editor {
     }
 
     var textView: NSTextView { coordinator.textView! }
-    var layoutManager: LintLayoutManager { textView.layoutManager as! LintLayoutManager }
+    var layoutManager: LintLayoutManager { (textView.layoutManager as? LintLayoutManager)! }
     var marks: [NSRange] { layoutManager.marks.map(\.range) }
 
     var highlighted: [Range<Int>] {

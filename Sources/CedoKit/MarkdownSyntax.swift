@@ -17,8 +17,12 @@ public enum MarkdownSyntax {
         let group: Int
 
         init(_ pattern: String, _ style: Style, group: Int = 0) {
-            // The patterns are fixed, so a failure is a bug caught by the tests
-            regex = try! NSRegularExpression(pattern: pattern, options: [.anchorsMatchLines])
+            do {
+                regex = try NSRegularExpression(pattern: pattern, options: [.anchorsMatchLines])
+            } catch {
+                // The patterns are fixed, so a failure is a bug caught by the tests
+                preconditionFailure("Invalid pattern \(pattern): \(error)")
+            }
             self.style = style
             self.group = group
         }
