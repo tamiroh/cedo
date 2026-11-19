@@ -44,7 +44,8 @@ public enum Git {
         for line in lines {
             if line.hasPrefix("+++ b/") {
                 return String(line.dropFirst(6)).trimmingCharacters(in: CharacterSet(charactersIn: "\t"))
-            } else if line.hasPrefix("rename to ") {
+            }
+            if line.hasPrefix("rename to ") {
                 path = String(line.dropFirst(10))
             } else if line.hasPrefix("--- a/"), path == nil {
                 path = String(line.dropFirst(6)).trimmingCharacters(in: CharacterSet(charactersIn: "\t"))

@@ -12,6 +12,11 @@ disabled_rules:
 
 opt_in_rules:
   - async_without_await
+  - discarded_notification_center_observer
+  - local_doc_comment
+  - private_swiftui_state
+  - redundant_self
+  - superfluous_else
   - unneeded_escaping
   - unneeded_throws_rethrows
 

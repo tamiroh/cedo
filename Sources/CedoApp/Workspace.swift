@@ -35,6 +35,7 @@ final class Workspace: ObservableObject {
     private var saveTimer: Timer?
     private var unsavedSince: Date?
     private var outsideChangeTimer: Timer?
+    private var resignActiveObserver: NSObjectProtocol?
     private var isResolvingConflict = false
     private var textlint: Textlint?
     private var configurationModificationDate: Date?
@@ -54,9 +55,9 @@ final class Workspace: ObservableObject {
     init() {
         autoCommitter.onCommit = { [weak self] in self?.historyVersion += 1 }
 
-        let center = NotificationCenter.default
-        center.addObserver(forName: NSApplication.willResignActiveNotification, object: nil, queue: .main) {
-            [weak self] _ in
+        resignActiveObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.willResignActiveNotification, object: nil, queue: .main
+        ) { [weak self] _ in
             MainActor.assumeIsolated { self?.save() }
         }
         outsideChangeTimer = Timer.scheduledTimer(withTimeInterval: Self.outsideChangeInterval, repeats: true) {
@@ -96,11 +97,11 @@ final class Workspace: ObservableObject {
         log.info("Started a shell in \(directory.lastPathComponent)")
         shell = ShellSession(directory: directory) { [weak self] session in
             // Ignore exits from a shell that has already been replaced
-            guard let self, self.shell === session else { return }
-            self.log.info("The shell exited")
-            self.shell = nil
-            if self.panel == .terminal {
-                self.ui.panel = nil
+            guard let self, shell === session else { return }
+            log.info("The shell exited")
+            shell = nil
+            if panel == .terminal {
+                ui.panel = nil
             }
         }
     }
