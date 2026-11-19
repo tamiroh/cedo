@@ -1,4 +1,4 @@
-reporter: relative-path
+reporter: emoji
 
 included:
   - Sources
