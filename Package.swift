@@ -8,7 +8,8 @@ let package = Package(
         .executable(name: "cedo", targets: ["CedoApp"])
     ],
     dependencies: [
-        .package(url: "https://github.com/migueldeicaza/SwiftTerm.git", exact: "1.99.2")
+        .package(url: "https://github.com/migueldeicaza/SwiftTerm.git", exact: "1.99.2"),
+        .package(url: "https://github.com/SimplyDanny/SwiftLintPlugins", exact: "0.65.1"),
     ],
     targets: [
         .executableTarget(

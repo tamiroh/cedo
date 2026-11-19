@@ -21,6 +21,7 @@ format:
 .PHONY: lint
 lint:
 	swift format lint --strict --recursive Package.swift Sources Tests
+	swift package plugin --allow-writing-to-package-directory swiftlint --strict --quiet
 
 .PHONY: app
 app:

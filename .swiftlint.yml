@@ -1,0 +1,16 @@
+reporter: relative-path
+
+included:
+  - Sources
+  - Tests
+  - Support
+  - Package.swift
+
+identifier_name:
+  excluded:
+    - id
+    - x
+    - y
+
+trailing_comma:
+  mandatory_comma: true
