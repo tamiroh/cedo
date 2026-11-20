@@ -91,7 +91,7 @@ struct ContentView: View {
                 header(for: file)
                     .padding(.horizontal, CodeTextView.textInset.width)
                 if workspace.ui.showsHistory {
-                    HistoryView(file: file, refreshKey: workspace.historyVersion)
+                    HistoryView(file: file, document: workspace.document, refreshKey: workspace.historyVersion)
                         .id(file)
                         .padding([.horizontal, .bottom], CodeTextView.textInset.width)
                         .padding(.top, 12)

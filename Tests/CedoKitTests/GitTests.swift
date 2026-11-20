@@ -4,6 +4,26 @@ import Testing
 @testable import CedoKit
 
 struct GitTests {
+    @Test func previewsEditorTextBeforeAndAfterRecordingAnEdit() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try Git.createRepository(in: directory)
+        let file = directory.appendingPathComponent("Draft.md")
+        try Data("First draft".utf8).write(to: file)
+        #expect(try await Git.history(of: file).isEmpty)
+        #expect(try await Git.currentDiff(of: file, text: "First draft").contains("+First draft"))
+        try Git.runSync(["add", "."], in: directory)
+        try Git.runSync(
+            ["-c", "user.name=Writer", "-c", "user.email=writer@example.org", "commit", "-qm", "Edit"],
+            in: directory)
+        #expect(try await Git.currentDiff(of: file, text: "First draft").isEmpty)
+        let patch = try await Git.currentDiff(of: file, text: "Revised draft")
+        #expect(patch.contains("-First draft"))
+        #expect(patch.contains("+Revised draft"))
+        #expect(try String(contentsOf: file, encoding: .utf8) == "First draft")
+    }
+
     @Test func measuresEachChangeInCharacters() async throws {
         let repository = FileManager.default.temporaryDirectory.appendingPathComponent(
             "cedo-tests-\(UUID().uuidString)")

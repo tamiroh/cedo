@@ -18,6 +18,8 @@ public enum Git {
     }
 
     public static func history(of file: URL) async throws -> [Commit] {
+        let directory = file.deletingLastPathComponent()
+        guard try await !run(["rev-parse", "--revs-only", "HEAD"], in: directory).isEmpty else { return [] }
         let output = try await run(
             [
                 "log", "--follow", "--no-color", "--patch", "--unified=0",
@@ -31,7 +33,7 @@ public enum Git {
             guard let header = lines.first, let path = path(inPatch: lines.dropFirst()) else { return nil }
             let fields = header.split(separator: "\u{1f}", omittingEmptySubsequences: false).map(String.init)
             guard fields.count == 3, let seconds = TimeInterval(fields[1]) else { return nil }
-            let size = size(of: Diff.edits(in: lines.dropFirst().joined(separator: "\n")))
+            let size = size(of: lines.dropFirst().joined(separator: "\n"))
             return Commit(
                 hash: fields[0], date: Date(timeIntervalSince1970: seconds), subject: fields[2],
                 added: size.added, removed: size.removed, path: path
@@ -57,8 +59,8 @@ public enum Git {
     }
 
     /// Counts only the changed part of a rewritten line, so fixing one character in a paragraph counts as one.
-    static func size(of edits: [Diff.Edit]) -> (added: Int, removed: Int) {
-        edits.reduce(into: (added: 0, removed: 0)) { size, edit in
+    public static func size(of patch: String) -> (added: Int, removed: Int) {
+        Diff.edits(in: patch).reduce(into: (added: 0, removed: 0)) { size, edit in
             switch edit {
             case .rewritten(let old, let new):
                 let (removed, added) = Diff.changedTexts(old, new)
@@ -68,6 +70,26 @@ public enum Git {
             case .added(let text): size.added += text.count
             }
         }
+    }
+
+    public static func currentDiff(of file: URL, text: String) async throws -> String {
+        try await Task.detached {
+            var previous = headVersion(of: file) ?? ""
+            if previous.utf8.starts(with: [0xEF, 0xBB, 0xBF]) {
+                previous = String(decoding: previous.utf8.dropFirst(3), as: UTF8.self)
+            }
+            guard !Document.same(previous, text) else { return "" }
+            let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            try FileManager.default.createDirectory(
+                at: directory, withIntermediateDirectories: false,
+                attributes: [.posixPermissions: 0o700])
+            defer { try? FileManager.default.removeItem(at: directory) }
+            try Data(previous.utf8).write(to: directory.appendingPathComponent("previous"))
+            try Data(text.utf8).write(to: directory.appendingPathComponent("current"))
+            return try runSync(
+                ["diff", "--no-index", "--no-color", "--no-ext-diff", "--", "previous", "current"],
+                in: directory, successStatuses: [0, 1])
+        }.value
     }
 
     public static func diff(of commit: Commit, near file: URL) async throws -> String {
@@ -96,7 +118,7 @@ public enum Git {
 
     @discardableResult
     static func runSync(
-        _ arguments: [String], in directory: URL, environment: [String: String] = [:]
+        _ arguments: [String], in directory: URL, environment: [String: String] = [:], successStatuses: Set<Int32> = [0]
     ) throws -> String {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
@@ -115,7 +137,7 @@ public enum Git {
         let error = stderr.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
 
-        guard process.terminationStatus == 0 else {
+        guard successStatuses.contains(process.terminationStatus) else {
             let message = String(lossyUTF8: error)
             if message.contains("not a git repository") {
                 throw Failure(message: "This file is not in a Git repository.")

@@ -3,8 +3,11 @@ import SwiftUI
 
 struct HistoryView: View {
     let file: URL
+    let document: CedoKit.Document?
     let refreshKey: Int
     @State private var commits: Loadable<[Commit]> = .loading
+    @State private var currentSize = (added: 0, removed: 0)
+    @State private var currentPatch = ""
     @State private var selected: Commit?
     @State private var diff: Loadable<String> = .loading
 
@@ -15,8 +18,8 @@ struct HistoryView: View {
                 message("Loading…")
             case .failed(let error):
                 message(error)
-            case .loaded(let commits) where commits.isEmpty:
-                message("No commits for this file yet.")
+            case .loaded(let commits) where commits.isEmpty && currentPatch.isEmpty:
+                message("No edits yet.")
             case .loaded(let commits):
                 HStack(alignment: .top, spacing: 16) {
                     commitList(commits)
@@ -25,14 +28,31 @@ struct HistoryView: View {
                 }
             }
         }
-        .task(id: refreshKey) { await load() }
+        .task(id: LoadKey(version: refreshKey, text: document?.text)) { await load() }
+    }
+
+    private struct LoadKey: Equatable {
+        let version: Int
+        let text: String?
     }
 
     private func commitList(_ commits: [Commit]) -> some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
+                if !currentPatch.isEmpty, let document {
+                    HistoryRow(
+                        title: "Current edits", date: document.lastEditedAt, added: currentSize.added,
+                        removed: currentSize.removed, isSelected: selected == nil
+                    ) {
+                        selected = nil
+                        diff = .loaded(currentPatch)
+                    }
+                }
                 ForEach(commits) { commit in
-                    CommitRow(commit: commit, isSelected: commit == selected) {
+                    HistoryRow(
+                        title: commit.subject, date: commit.date, added: commit.added, removed: commit.removed,
+                        isSelected: commit == selected
+                    ) {
                         Task { await select(commit) }
                     }
                 }
@@ -70,12 +90,26 @@ struct HistoryView: View {
     private func load() async {
         do {
             let result = try await Git.history(of: file)
+            let patch: String
+            if let text = document?.text {
+                patch = try await Git.currentDiff(of: file, text: text)
+            } else {
+                patch = ""
+            }
+            guard !Task.isCancelled else { return }
+            currentSize = Git.size(of: patch)
+            currentPatch = patch
             commits = .loaded(result)
-            if let first = result.first {
+            if let selected, result.contains(selected) { return }
+            if !patch.isEmpty {
+                selected = nil
+                diff = .loaded(patch)
+            } else if let first = result.first {
                 await select(first)
             }
         } catch {
-            commits = .failed(error.localizedDescription)
+            guard !Task.isCancelled else { return }
+            commits = .failed("Couldn’t load edit history.")
         }
     }
 
@@ -86,7 +120,7 @@ struct HistoryView: View {
         do {
             result = .loaded(try await Git.diff(of: commit, near: file))
         } catch {
-            result = .failed(error.localizedDescription)
+            result = .failed("Couldn’t load this edit.")
         }
         // Drop the result if another commit was selected in the meantime
         if selected == commit {
@@ -101,8 +135,11 @@ private enum Loadable<Value> {
     case failed(String)
 }
 
-private struct CommitRow: View {
-    let commit: Commit
+private struct HistoryRow: View {
+    let title: String
+    let date: Date
+    let added: Int
+    let removed: Int
     let isSelected: Bool
     let action: () -> Void
     @State private var hovering = false
@@ -110,21 +147,21 @@ private struct CommitRow: View {
     var body: some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(commit.subject)
+                Text(title)
                     .font(.system(size: 13))
                     .foregroundStyle(Theme.text)
                     .lineLimit(isSelected ? nil : 1)
                     .fixedSize(horizontal: false, vertical: isSelected)
                 HStack(spacing: 6) {
-                    Text(Self.timestamp(of: commit.date))
+                    Text(Self.timestamp(of: date))
                         .foregroundStyle(Theme.muted)
                         .lineLimit(1)
                     Spacer(minLength: 0)
-                    if commit.added > 0 {
-                        Text("+\(commit.added)").foregroundStyle(Theme.added)
+                    if added > 0 {
+                        Text("+\(added)").foregroundStyle(Theme.added)
                     }
-                    if commit.removed > 0 {
-                        Text("−\(commit.removed)").foregroundStyle(Theme.removed)
+                    if removed > 0 {
+                        Text("−\(removed)").foregroundStyle(Theme.removed)
                     }
                 }
                 .font(.system(size: 12).monospacedDigit())

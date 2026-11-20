@@ -16,7 +16,10 @@ public struct Document: Equatable {
     }
 
     public let url: URL
-    public var text: String
+    public var text: String {
+        didSet { lastEditedAt = .now }
+    }
+    public private(set) var lastEditedAt: Date
     private var savedText: String
     private var savedModificationDate: Date?
     private var hasByteOrderMark: Bool
@@ -35,6 +38,7 @@ public struct Document: Equatable {
         text = content
         savedText = content
         savedModificationDate = Self.modificationDate(of: target)
+        lastEditedAt = savedModificationDate ?? .now
     }
 
     public mutating func save(overwritingOutsideChanges: Bool = false) throws -> SaveResult {
@@ -73,6 +77,7 @@ public struct Document: Equatable {
         text = content
         savedText = content
         savedModificationDate = Self.modificationDate(of: target)
+        lastEditedAt = savedModificationDate ?? .now
     }
 
     private static let byteOrderMark = Data([0xEF, 0xBB, 0xBF])
