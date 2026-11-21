@@ -17,6 +17,8 @@ final class Workspace: ObservableObject {
     private static let lintDelay: Duration = .milliseconds(500)
 
     @Published private(set) var root: FileNode?
+    @Published private(set) var previousFiles: [URL] = []
+    @Published private(set) var nextFiles: [URL] = []
     @Published var showsProjectSearch = false
     @Published private(set) var selectedFile: URL?
     @Published private(set) var document: Document? {
@@ -249,6 +251,8 @@ final class Workspace: ObservableObject {
         guard saveBeforeLeaving() else { return }
         autoCommitter.flush()
         readThroughFolder = nil
+        previousFiles.removeAll()
+        nextFiles.removeAll()
         log.info("Opened folder \(folder.path)")
         root = FileNode(url: folder, includesHiddenFiles: ui.showsHiddenFiles)
         textlint = Textlint(root: folder)
@@ -280,14 +284,49 @@ final class Workspace: ObservableObject {
     }
 
     func select(_ url: URL?) {
-        if url != nil {
-            readThroughFolder = nil
-        }
-        guard url != selectedFile else { return }
         guard let url, !isDirectory(url) else { return }
-        guard saveBeforeLeaving() else { return }
+        if url.standardizedFileURL.path == selectedFile?.standardizedFileURL.path {
+            readThroughFolder = nil
+            return
+        }
+        let previous = document?.url
+        guard switchFile(to: url) else { return }
+        if let previous { previousFiles.append(previous) }
+        nextFiles.removeAll()
+    }
+
+    func goBack() {
+        navigate(from: \.previousFiles, to: \.nextFiles)
+    }
+
+    func goForward() {
+        navigate(from: \.nextFiles, to: \.previousFiles)
+    }
+
+    private func navigate(
+        from source: ReferenceWritableKeyPath<Workspace, [URL]>,
+        to destination: ReferenceWritableKeyPath<Workspace, [URL]>
+    ) {
+        while let file = self[keyPath: source].last {
+            if FileManager.default.isReadableFile(atPath: file.path), !isDirectory(file),
+                file.standardizedFileURL.path != selectedFile?.standardizedFileURL.path
+            {
+                let current = document?.url
+                guard switchFile(to: file) else { return }
+                self[keyPath: source].removeLast()
+                if let current { self[keyPath: destination].append(current) }
+                return
+            }
+            self[keyPath: source].removeLast()
+        }
+    }
+
+    private func switchFile(to url: URL) -> Bool {
+        guard saveBeforeLeaving() else { return false }
         autoCommitter.flush()
+        readThroughFolder = nil
         load(url)
+        return true
     }
 
     func textDidChange(_ newText: String) {

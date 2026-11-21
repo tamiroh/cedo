@@ -70,6 +70,14 @@ struct CedoApp: App {
                     findButton("Use Selection for Find", .setSearchString, "e")
                 }
             }
+            CommandMenu("Navigate") {
+                Button("Back to Previous File") { workspace.goBack() }
+                    .keyboardShortcut("[")
+                    .disabled(workspace.previousFiles.isEmpty || workspace.showsProjectSearch)
+                Button("Forward to Next File") { workspace.goForward() }
+                    .keyboardShortcut("]")
+                    .disabled(workspace.nextFiles.isEmpty || workspace.showsProjectSearch)
+            }
             CommandGroup(before: .toolbar) {
                 Button(workspace.panel == .terminal ? "Hide Terminal" : "Show Terminal") {
                     workspace.toggle(.terminal)
