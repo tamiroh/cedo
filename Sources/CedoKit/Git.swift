@@ -75,8 +75,8 @@ public enum Git {
     public static func currentDiff(of file: URL, text: String) async throws -> String {
         try await Task.detached {
             var previous = headVersion(of: file) ?? ""
-            if previous.utf8.starts(with: [0xEF, 0xBB, 0xBF]) {
-                previous = String(decoding: previous.utf8.dropFirst(3), as: UTF8.self)
+            if previous.unicodeScalars.first == "\u{FEFF}" {
+                previous.unicodeScalars.removeFirst()
             }
             guard !Document.same(previous, text) else { return "" }
             let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
