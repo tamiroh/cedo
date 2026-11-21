@@ -2,12 +2,32 @@ import AppKit
 import CedoKit
 import SwiftUI
 
+@MainActor
+final class SearchJump {
+    var hit: SearchHit?
+
+    init(hit: SearchHit) { self.hit = hit }
+
+    func apply(to view: NSTextView, document: URL) {
+        guard let hit, hit.file == document else { return }
+        self.hit = nil
+        let text = view.string as NSString
+        guard NSMaxRange(hit.range) <= text.length,
+            text.substring(with: hit.range) == (hit.source as NSString).substring(with: hit.range)
+        else { return }
+        view.setSelectedRange(hit.range)
+        view.scrollRangeToVisible(hit.range)
+        view.window?.makeFirstResponder(view)
+    }
+}
+
 struct CodeTextView: NSViewRepresentable {
     let text: String
     let document: URL
     let lint: Workspace.Lint?
     let configuration: Configuration?
     let horizontalInset: CGFloat
+    var searchJump: SearchJump?
     let onChange: (String) -> Void
 
     static let textInset = NSSize(width: 32, height: 12)
@@ -36,6 +56,7 @@ struct CodeTextView: NSViewRepresentable {
             text: text, document: document, lint: lint, configuration: configuration,
             horizontalInset: horizontalInset
         )
+        if let view = context.coordinator.textView { searchJump?.apply(to: view, document: document) }
     }
 
     private static func setText(_ text: String, in textView: NSTextView) {

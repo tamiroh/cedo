@@ -17,6 +17,7 @@ final class Workspace: ObservableObject {
     private static let lintDelay: Duration = .milliseconds(500)
 
     @Published private(set) var root: FileNode?
+    @Published var showsProjectSearch = false
     @Published private(set) var selectedFile: URL?
     @Published private(set) var document: Document? {
         didSet { documentDidChange(from: oldValue) }

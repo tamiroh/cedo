@@ -1,7 +1,9 @@
+import CedoKit
 import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var workspace: Workspace
+    @State private var searchJump: SearchJump?
     @State private var dragStartWidth: CGFloat?
     @State private var editorWidth: CGFloat = 0
     @State private var columnDragStartWidth: CGFloat?
@@ -48,6 +50,17 @@ struct ContentView: View {
         .foregroundStyle(Theme.text)
         .background(Theme.background)
         .background { hiddenFilesShortcut }
+        .sheet(isPresented: $workspace.showsProjectSearch) {
+            if let root = workspace.root {
+                ProjectSearchView(folder: root.url, includesHiddenFiles: root.includesHiddenFiles) { hit in
+                    workspace.select(hit.file)
+                    guard workspace.selectedFile == hit.file, workspace.document != nil else { return }
+                    workspace.ui.showsHistory = false
+                    searchJump = SearchJump(hit: hit)
+                    workspace.showsProjectSearch = false
+                }
+            }
+        }
         .ignoresSafeArea()
         .frame(minWidth: 700, minHeight: 400)
     }
@@ -105,7 +118,7 @@ struct ContentView: View {
                     CodeTextView(
                         text: workspace.text, document: file, lint: workspace.lint,
                         configuration: workspace.configuration, horizontalInset: margin,
-                        onChange: workspace.textDidChange
+                        searchJump: searchJump, onChange: workspace.textDidChange
                     )
                     .overlay { columnHandles(margin: margin) }
                 }

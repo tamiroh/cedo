@@ -62,6 +62,9 @@ struct CedoApp: App {
                 Menu("Find") {
                     findButton("Find…", .showFindInterface, "f")
                     findButton("Find and Replace…", .showReplaceInterface, "f", modifiers: [.command, .option])
+                    Button("Find in Files…") { workspace.showsProjectSearch = true }
+                        .keyboardShortcut("f", modifiers: [.command, .shift])
+                        .disabled(workspace.root == nil)
                     findButton("Find Next", .nextMatch, "g")
                     findButton("Find Previous", .previousMatch, "g", modifiers: [.command, .shift])
                     findButton("Use Selection for Find", .setSearchString, "e")
