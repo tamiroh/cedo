@@ -41,10 +41,10 @@ struct ContentView: View {
             }
         }
         .coordinateSpace(name: "noteCanvas")
-        .onGeometryChange(for: CGSize.self) {
-            $0.size
-        } action: {
-            canvasSize = $0
+        .onGeometryChange(for: CGSize.self) { geometry in
+            geometry.size
+        } action: { size in
+            canvasSize = size
         }
         .dropDestination(for: URL.self) { files, location in
             guard workspace.root != nil else { return false }
