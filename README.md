@@ -8,10 +8,25 @@ A “minimal” text editor for long-form writing.
 - **Plain files, quiet history** — Files stay plain text in a folder. Git keeps their history behind the scenes, and the folder remains a normal repository other tools can use.
 - **Terminal alongside** — Covers what the editor can't do yet, and is a place to consult coding agents while you write.
 
-## Requirements
+## Installation
 
-- macOS 14 or later
-- Xcode with Swift 6.2 or later
+Cedo requires macOS 14 or later.
+
+### From a release
+
+Download `Cedo.dmg` from the [latest release](https://github.com/tamiroh/cedo/releases/latest), open it, and drag `Cedo.app` into the Applications folder.
+
+The release build is not notarized by Apple. macOS may block it on first launch.
+
+### Manual installation
+
+To build from source, install Xcode with Swift 6.2 or later. From the repository root, run the following command to install Cedo in `/Applications`.
+
+```sh
+make install
+```
+
+To use a different destination, set `INSTALL_DIR` (for example, `make install INSTALL_DIR=~/Applications`).
 
 ## Build and run
 
@@ -26,13 +41,6 @@ Build an app bundle at `build/Cedo.app`, and open it:
 ```sh
 make app
 make open
-```
-
-Install it into `/Applications` (set `INSTALL_DIR` to install elsewhere):
-
-```sh
-make install
-make install INSTALL_DIR=~/Applications
 ```
 
 `make build` builds the debug version, `make test` runs the tests, and `make clean` removes build outputs.
