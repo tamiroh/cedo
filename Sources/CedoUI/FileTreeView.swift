@@ -1,9 +1,18 @@
 import CedoKit
 import SwiftUI
 
+struct NoteDrag {
+    let file: URL
+    let location: CGPoint
+
+    var origin: CGPoint { CGPoint(x: location.x - 24, y: location.y - 12) }
+}
+
 struct FileTreeView: View {
     @EnvironmentObject private var workspace: Workspace
     let root: FileNode
+    let noteDrag: GestureState<NoteDrag?>
+    let bounds: CGSize
     @State private var expanded: Set<URL> = []
     @State private var showsCounts = false
 
@@ -14,7 +23,7 @@ struct FileTreeView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 ForEach(rows) { row in
-                    FileRow(
+                    let fileRow = FileRow(
                         row: row,
                         isExpanded: expanded.contains(row.id),
                         isSelected: workspace.selectedFile == row.id,
@@ -27,7 +36,25 @@ struct FileTreeView: View {
                             workspace.select(row.id)
                         }
                     }
-                    .onDrag { NSItemProvider(object: row.id as NSURL) }
+                    Group {
+                        if row.node.isDirectory {
+                            fileRow.onDrag { NSItemProvider(object: row.id as NSURL) }
+                        } else {
+                            fileRow.highPriorityGesture(
+                                DragGesture(minimumDistance: 18, coordinateSpace: .named("noteCanvas"))
+                                    .updating(noteDrag) { value, drag, _ in
+                                        drag = NoteDrag(file: row.id, location: value.location)
+                                    }
+                                    .onEnded { value in
+                                        guard CGRect(origin: .zero, size: bounds).contains(value.location) else {
+                                            return
+                                        }
+                                        let drag = NoteDrag(file: row.id, location: value.location)
+                                        workspace.pinNote(row.id, at: drag.origin)
+                                    }
+                            )
+                        }
+                    }
                     .contextMenu {
                         Button("New File…") {
                             workspace.newFile(in: row.node.isDirectory ? row.id : row.id.deletingLastPathComponent())

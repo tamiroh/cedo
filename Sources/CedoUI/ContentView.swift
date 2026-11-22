@@ -3,6 +3,8 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var workspace: Workspace
+    @GestureState private var noteDrag: NoteDrag?
+    @State private var canvasSize: CGSize = .zero
     @State private var searchJump: SearchJump?
     @State private var dragStartWidth: CGFloat?
     @State private var editorWidth: CGFloat = 0
@@ -22,15 +24,6 @@ struct ContentView: View {
                 }
             main
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .dropDestination(for: URL.self) { files, location in
-                    guard workspace.root != nil else { return false }
-                    // Notes are placed in the window, which starts at the sidebar
-                    let x = location.x + Self.sidebarWidth
-                    for (index, file) in files.enumerated() {
-                        workspace.pinNote(file, at: CGPoint(x: x + CGFloat(index) * 24, y: location.y))
-                    }
-                    return true
-                }
             if let panel = workspace.panel {
                 self.panel(panel)
                     .padding(.top, 36)
@@ -43,9 +36,22 @@ struct ContentView: View {
         }
         // Over the whole window, so a note stays on top of the side panel too
         .overlay {
-            if workspace.ui.showsNotes {
-                NotesView()
+            if workspace.ui.showsNotes || noteDrag != nil {
+                NotesView(drag: noteDrag)
             }
+        }
+        .coordinateSpace(name: "noteCanvas")
+        .onGeometryChange(for: CGSize.self) {
+            $0.size
+        } action: {
+            canvasSize = $0
+        }
+        .dropDestination(for: URL.self) { files, location in
+            guard workspace.root != nil else { return false }
+            for (index, file) in files.enumerated() {
+                workspace.pinNote(file, at: CGPoint(x: location.x + CGFloat(index) * 24, y: location.y))
+            }
+            return true
         }
         .foregroundStyle(Theme.text)
         .background(Theme.background)
@@ -81,7 +87,7 @@ struct ContentView: View {
                 .lineLimit(1)
                 .padding(.horizontal, 8)
             if let root = workspace.root {
-                FileTreeView(root: root)
+                FileTreeView(root: root, noteDrag: $noteDrag, bounds: canvasSize)
                     .id(root.url)
                     .padding(.top, 12)
             }

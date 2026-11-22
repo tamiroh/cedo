@@ -5,10 +5,23 @@ import SwiftUI
 struct NotesView: View {
     @EnvironmentObject private var workspace: Workspace
 
+    let drag: NoteDrag?
+
     var body: some View {
         GeometryReader { geometry in
-            ForEach(Array(workspace.notes.enumerated()), id: \.element.path) { index, note in
-                NoteView(note: note, frame: frame(of: note, at: index, in: geometry.size))
+            if workspace.ui.showsNotes {
+                ForEach(Array(workspace.notes.enumerated()), id: \.element.path) { index, note in
+                    if note.path != drag?.file.path {
+                        NoteView(note: note, frame: frame(of: note, at: index, in: geometry.size))
+                    }
+                }
+            }
+            if let drag {
+                let size = workspace.notes.first { $0.path == drag.file.path }?.frame?.size ?? UIState.Note.defaultSize
+                let note = UIState.Note(path: drag.file.path, frame: CGRect(origin: drag.origin, size: size))
+                NoteView(note: note, frame: frame(of: note, at: 0, in: geometry.size), isDragPreview: true)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
             }
         }
     }
@@ -41,6 +54,9 @@ private struct NoteView: View {
     @EnvironmentObject private var workspace: Workspace
     let note: UIState.Note
     let frame: CGRect
+    var isDragPreview = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var appeared = false
     @State private var moved: CGSize = .zero
     @State private var resized: CGSize = .zero
     @State private var savedText: String?
@@ -89,6 +105,10 @@ private struct NoteView: View {
         .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.border))
         .shadow(color: .black.opacity(0.35), radius: 10, y: 3)
         .overlay(alignment: .bottomTrailing) { resizeHandle }
+        .scaleEffect(isDragPreview && !appeared && !reduceMotion ? 0.92 : 1, anchor: .topLeading)
+        .opacity(isDragPreview && !appeared ? 0 : 1)
+        .animation(.easeOut(duration: 0.18), value: appeared)
+        .onAppear { if isDragPreview { appeared = true } }
         .offset(x: frame.minX + moved.width, y: frame.minY + moved.height)
         .task(id: note.path) {
             while !Task.isCancelled {
