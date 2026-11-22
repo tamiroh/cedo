@@ -30,13 +30,14 @@ public final class FileNode: Identifiable, Hashable {
                 includingPropertiesForKeys: [.isDirectoryKey],
                 options: includesHiddenFiles ? [] : [.skipsHiddenFiles]
             )) ?? []
-        return urls.filter {
-            $0.lastPathComponent != ".git" && (includesHiddenFiles || !Self.toolNames.contains($0.lastPathComponent))
-        }.map {
-            FileNode(url: $0, includesHiddenFiles: includesHiddenFiles)
-        }.sorted {
-            if $0.isDirectory != $1.isDirectory { return $0.isDirectory }
-            return $0.name.localizedStandardCompare($1.name) == .orderedAscending
+        return urls.filter { child in
+            child.lastPathComponent != ".git"
+                && (includesHiddenFiles || !Self.toolNames.contains(child.lastPathComponent))
+        }.map { child in
+            FileNode(url: child, includesHiddenFiles: includesHiddenFiles)
+        }.sorted { lhs, rhs in
+            if lhs.isDirectory != rhs.isDirectory { return lhs.isDirectory }
+            return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
         }
     }()
 

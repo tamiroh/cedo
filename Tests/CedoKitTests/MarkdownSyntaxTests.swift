@@ -85,8 +85,8 @@ struct MarkdownSyntaxTests {
     }
 
     private func styled(_ text: String) -> [Styled] {
-        MarkdownSyntax.spans(in: text).map {
-            Styled((text as NSString).substring(with: $0.range), $0.style)
+        MarkdownSyntax.spans(in: text).map { span in
+            Styled((text as NSString).substring(with: span.range), span.style)
         }
     }
 }

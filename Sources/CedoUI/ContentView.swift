@@ -133,10 +133,10 @@ struct ContentView: View {
             }
         }
         .padding(.top, 36)
-        .onGeometryChange(for: CGFloat.self) {
-            $0.size.width
-        } action: {
-            editorWidth = $0
+        .onGeometryChange(for: CGFloat.self) { geometry in
+            geometry.size.width
+        } action: { width in
+            editorWidth = width
         }
     }
 

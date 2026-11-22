@@ -43,8 +43,8 @@ enum EditSummary {
             return language.renamed(before, after)
         }
 
-        if rewrites.allSatisfy({
-            let changed = Diff.changedTexts($0.0, $0.1)
+        if rewrites.allSatisfy({ old, new in
+            let changed = Diff.changedTexts(old, new)
             return changed.old.count <= 3 && changed.new.count <= 3
         }) {
             return language.smallFixes

@@ -122,8 +122,8 @@ private struct NoteView: View {
         .onTapGesture(count: 2) { workspace.select(file) }
         .gesture(
             DragGesture(coordinateSpace: .global)
-                .onChanged {
-                    moved = $0.translation
+                .onChanged { value in
+                    moved = value.translation
                     NSCursor.closedHand.set()
                 }
                 .onEnded { _ in
