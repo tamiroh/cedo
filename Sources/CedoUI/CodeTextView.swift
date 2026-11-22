@@ -180,7 +180,7 @@ struct CodeTextView: NSViewRepresentable {
                 return LintLayoutManager.Mark(
                     range: diagnostic.range,
                     message: "\(diagnostic.message)\n\n\(diagnostic.ruleID)",
-                    isError: diagnostic.isError
+                    severity: diagnostic.severity
                 )
             }
             textView.needsDisplay = true

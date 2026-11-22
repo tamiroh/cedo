@@ -9,7 +9,7 @@ struct TextlintTests {
             [{"messages":[
               {"ruleId":"japanese/max-ten","message":"Too many commas","index":13,"range":[13,14],"severity":2},
               {"ruleId":"old-rule","message":"No range\\n","index":20,"severity":1},
-              {"ruleId":"empty","message":"Empty range","index":30,"range":[30,30],"severity":2}
+              {"ruleId":"empty","message":"Empty range","index":30,"range":[30,30],"severity":3}
             ],"filePath":"a.md"}]
             """
         let diagnostics = try Textlint.parse(Data(output.utf8))
@@ -18,9 +18,12 @@ struct TextlintTests {
             diagnostics == [
                 .init(
                     range: NSRange(location: 13, length: 1), message: "Too many commas", ruleID: "japanese/max-ten",
-                    isError: true),
-                .init(range: NSRange(location: 20, length: 1), message: "No range", ruleID: "old-rule", isError: false),
-                .init(range: NSRange(location: 30, length: 1), message: "Empty range", ruleID: "empty", isError: true),
+                    severity: .error),
+                .init(
+                    range: NSRange(location: 20, length: 1), message: "No range", ruleID: "old-rule", severity: .warning
+                ),
+                .init(
+                    range: NSRange(location: 30, length: 1), message: "Empty range", ruleID: "empty", severity: .info),
             ])
     }
 

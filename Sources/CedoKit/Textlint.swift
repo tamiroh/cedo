@@ -3,12 +3,18 @@ import Foundation
 import os
 
 public struct Textlint: Sendable {
+    public enum Severity: Int, Decodable, Sendable {
+        case warning = 1
+        case error = 2
+        case info = 3
+    }
+
     public struct Diagnostic: Equatable, Sendable {
         /// In UTF-16 code units, as in `NSString`.
         public let range: NSRange
         public let message: String
         public let ruleID: String
-        public let isError: Bool
+        public let severity: Severity
     }
 
     struct Failure: LocalizedError {
@@ -107,7 +113,7 @@ public struct Textlint: Sendable {
             let message: String
             let index: Int
             let range: [Int]?
-            let severity: Int
+            let severity: Severity
         }
 
         return try JSONDecoder().decode([Result].self, from: output).flatMap(\.messages).map { message in
@@ -118,7 +124,7 @@ public struct Textlint: Sendable {
                 range: NSRange(location: start, length: max(end - start, 1)),
                 message: message.message.trimmingCharacters(in: .whitespacesAndNewlines),
                 ruleID: message.ruleId ?? "",
-                isError: message.severity >= 2
+                severity: message.severity
             )
         }
     }

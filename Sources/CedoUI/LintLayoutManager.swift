@@ -1,10 +1,19 @@
 import AppKit
+import CedoKit
 
 final class LintLayoutManager: NSLayoutManager {
     struct Mark {
         var range: NSRange
         let message: String
-        let isError: Bool
+        let severity: Textlint.Severity
+
+        var color: NSColor {
+            switch severity {
+            case .warning: NSColor(Theme.warning)
+            case .error: NSColor(Theme.danger)
+            case .info: NSColor(Theme.info)
+            }
+        }
     }
 
     var marks: [Mark] = []
@@ -15,7 +24,7 @@ final class LintLayoutManager: NSLayoutManager {
             let glyphs = NSIntersectionRange(
                 glyphRange(forCharacterRange: mark.range, actualCharacterRange: nil), glyphsToShow)
             guard glyphs.length > 0 else { continue }
-            NSColor(mark.isError ? Theme.danger : Theme.warning).setStroke()
+            mark.color.setStroke()
             enumerateLineFragments(forGlyphRange: glyphs) { lineRect, _, container, lineGlyphs, _ in
                 let range = NSIntersectionRange(lineGlyphs, glyphs)
                 let bounds = self.boundingRect(forGlyphRange: range, in: container)

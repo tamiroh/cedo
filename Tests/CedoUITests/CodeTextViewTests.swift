@@ -41,7 +41,7 @@ struct CodeTextViewTests {
             lint: editor.lint(errorAt: NSRange(location: 3, length: 3), warningAt: NSRange(location: 7, length: 3)))
 
         #expect(editor.marks == [NSRange(location: 3, length: 3), NSRange(location: 7, length: 3)])
-        #expect(editor.layoutManager.marks.map(\.isError) == [true, false])
+        #expect(editor.layoutManager.marks.map(\.color) == [NSColor(Theme.danger), NSColor(Theme.warning)])
         #expect(editor.layoutManager.marks[0].message == "message\n\nrule")
     }
 
@@ -143,8 +143,8 @@ struct CodeTextViewTests {
     }
 }
 
-private func diagnostic(_ range: NSRange, isError: Bool = true) -> Textlint.Diagnostic {
-    Textlint.Diagnostic(range: range, message: "message", ruleID: "rule", isError: isError)
+private func diagnostic(_ range: NSRange, severity: Textlint.Severity = .error) -> Textlint.Diagnostic {
+    Textlint.Diagnostic(range: range, message: "message", ruleID: "rule", severity: severity)
 }
 
 @MainActor
@@ -190,7 +190,7 @@ private final class Editor {
     func lint(errorAt error: NSRange, warningAt warning: NSRange? = nil) -> Workspace.Lint {
         Workspace.Lint(
             file: document, text: textView.string,
-            diagnostics: [diagnostic(error)] + (warning.map { [diagnostic($0, isError: false)] } ?? []))
+            diagnostics: [diagnostic(error)] + (warning.map { [diagnostic($0, severity: .warning)] } ?? []))
     }
 
     func type(_ text: String, at location: Int) {
