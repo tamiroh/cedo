@@ -6,6 +6,26 @@ import Testing
 
 @MainActor
 struct CodeTextViewTests {
+    @Test(arguments: ["last", "last\n"]) func scrollsLastLineToCenter(ending: String) throws {
+        let editor = try Editor(String(repeating: "line\n", count: 60) + ending)
+        let scroll = try #require(editor.textView.enclosingScrollView)
+        let container = try #require(editor.textView.textContainer)
+        for height in [300, 480] {
+            editor.window.setContentSize(NSSize(width: 400, height: height))
+            scroll.layoutSubtreeIfNeeded()
+            editor.layoutManager.ensureLayout(for: container)
+            let manager = editor.layoutManager
+            let line =
+                manager.extraLineFragmentTextContainer == nil
+                ? manager.lineFragmentRect(forGlyphAt: manager.numberOfGlyphs - 1, effectiveRange: nil)
+                : manager.extraLineFragmentRect
+            var bottom = scroll.contentView.bounds
+            bottom.origin.y = editor.textView.frame.height
+            let visible = scroll.contentView.constrainBoundsRect(bottom)
+            #expect(abs(visible.midY - editor.textView.textContainerOrigin.y - line.midY) <= 2)
+        }
+    }
+
     @Test func reportsTyping() throws {
         let editor = try Editor("API の説明")
 

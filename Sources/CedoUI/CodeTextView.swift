@@ -133,7 +133,7 @@ struct CodeTextView: NSViewRepresentable {
         ) {
             guard let textView, let scrollView = textView.enclosingScrollView else { return }
             if textView.textContainerInset.width != horizontalInset {
-                textView.textContainerInset = NSSize(width: horizontalInset, height: CodeTextView.textInset.height)
+                textView.textContainerInset = NSSize(width: horizontalInset, height: textView.textContainerInset.height)
                 scrollView.tile()
                 setNeedsToolTips()
             }
@@ -293,6 +293,16 @@ struct CodeTextView: NSViewRepresentable {
 private final class ColumnScrollView: NSScrollView {
     override func tile() {
         super.tile()
+        if let editor = documentView as? EditorTextView, let manager = editor.layoutManager, let font = editor.font {
+            let lineHeight = manager.defaultLineHeight(for: font)
+            let top = CodeTextView.textInset.height
+            let bottom = max(top, (contentView.bounds.height - lineHeight) / 2 - contentView.contentInsets.bottom)
+            let inset = NSSize(width: editor.textContainerInset.width, height: (top + bottom) / 2)
+            if editor.textContainerInset != inset {
+                editor.textContainerInset = inset
+                editor.sizeToFit()
+            }
+        }
         guard isFindBarVisible, let findBar = findBarView,
             let inset = (documentView as? NSTextView)?.textContainerInset.width
         else { return }
@@ -302,6 +312,10 @@ private final class ColumnScrollView: NSScrollView {
 }
 
 private final class EditorTextView: NSTextView {
+    override var textContainerOrigin: NSPoint {
+        NSPoint(x: super.textContainerOrigin.x, y: CodeTextView.textInset.height)
+    }
+
     // Leaves dropped files to become notes, instead of inserting their paths into the text
     override var acceptableDragTypes: [NSPasteboard.PasteboardType] {
         super.acceptableDragTypes.filter { $0 != .fileURL && $0.rawValue != "NSFilenamesPboardType" }
