@@ -1,4 +1,4 @@
-import CedoKit
+import CedoSupport
 import SwiftUI
 
 struct LogView: View {

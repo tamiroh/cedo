@@ -1,6 +1,6 @@
 import Testing
 
-@testable import CedoKit
+@testable import CedoHistory
 
 struct DiffTests {
     @Test func readsHunksWithoutHeaders() {

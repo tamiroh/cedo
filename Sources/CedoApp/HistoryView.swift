@@ -1,3 +1,4 @@
+import CedoHistory
 import CedoKit
 import SwiftUI
 

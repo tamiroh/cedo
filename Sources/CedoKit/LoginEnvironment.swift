@@ -1,3 +1,4 @@
+import CedoSupport
 import Foundation
 
 /// Apps opened from the Finder get a minimal PATH, so tools installed with Homebrew, asdf and the like

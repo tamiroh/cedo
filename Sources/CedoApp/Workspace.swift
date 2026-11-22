@@ -1,5 +1,7 @@
 import AppKit
+import CedoHistory
 import CedoKit
+import CedoSupport
 import Foundation
 
 @MainActor

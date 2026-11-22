@@ -1,3 +1,4 @@
+import CedoSupport
 import Foundation
 
 public struct Commit: Identifiable, Hashable, Sendable {
@@ -78,7 +79,7 @@ public enum Git {
             if previous.unicodeScalars.first == "\u{FEFF}" {
                 previous.unicodeScalars.removeFirst()
             }
-            guard !Document.same(previous, text) else { return "" }
+            guard !previous.utf8.elementsEqual(text.utf8) else { return "" }
             let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
             try FileManager.default.createDirectory(
                 at: directory, withIntermediateDirectories: false,

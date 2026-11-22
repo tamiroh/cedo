@@ -1,7 +1,8 @@
+import CedoSupport
 import Foundation
 import Testing
 
-@testable import CedoKit
+@testable import CedoHistory
 
 @MainActor
 struct AutoCommitterTests {

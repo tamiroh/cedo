@@ -1,3 +1,4 @@
+import CedoSupport
 import Foundation
 
 /// A pause is a few idle minutes after saving, switching to another file or folder, or quitting.
@@ -104,7 +105,7 @@ public final class AutoCommitter {
             let old = Git.headVersion(of: file) ?? ""
             guard let data = try? Data(contentsOf: file) else { continue }
             let new = String(lossyUTF8: data)
-            guard !Document.same(new, old) else { continue }
+            guard !new.utf8.elementsEqual(old.utf8) else { continue }
             changes.append(Change(file: file, characterDelta: new.count - old.count))
         }
         guard !changes.isEmpty else { return nil }

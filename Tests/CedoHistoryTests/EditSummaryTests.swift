@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@testable import CedoKit
+@testable import CedoHistory
 
 struct EditSummaryTests {
     @Test func recognizesARename() {
