@@ -14,6 +14,7 @@ opt_in_rules:
   - anonymous_argument_in_multiline_closure
   - async_without_await
   - discarded_notification_center_observer
+  - force_unwrapping
   - local_doc_comment
   - prefer_self_in_static_references
   - private_swiftui_state

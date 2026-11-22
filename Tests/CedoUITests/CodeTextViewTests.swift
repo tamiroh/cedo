@@ -6,16 +6,16 @@ import Testing
 
 @MainActor
 struct CodeTextViewTests {
-    @Test func reportsTyping() {
-        let editor = Editor("API の説明")
+    @Test func reportsTyping() throws {
+        let editor = try Editor("API の説明")
 
         editor.type("新しい ", at: 0)
 
         #expect(editor.changes == ["新しい API の説明"])
     }
 
-    @Test func marksTheLintedText() {
-        let editor = Editor("この API は非推奨です。")
+    @Test func marksTheLintedText() throws {
+        let editor = try Editor("この API は非推奨です。")
 
         editor.update(
             lint: editor.lint(errorAt: NSRange(location: 3, length: 3), warningAt: NSRange(location: 7, length: 3)))
@@ -25,8 +25,8 @@ struct CodeTextViewTests {
         #expect(editor.layoutManager.marks[0].message == "message\n\nrule")
     }
 
-    @Test func ignoresLintForOtherTextOrFiles() {
-        let editor = Editor("この API は非推奨です。")
+    @Test func ignoresLintForOtherTextOrFiles() throws {
+        let editor = try Editor("この API は非推奨です。")
         let range = NSRange(location: 3, length: 3)
 
         editor.update(lint: Workspace.Lint(file: editor.document, text: "古い本文", diagnostics: [diagnostic(range)]))
@@ -38,8 +38,8 @@ struct CodeTextViewTests {
         #expect(editor.marks.isEmpty)
     }
 
-    @Test func movesMarksWithEditsAndDropsEditedOnes() {
-        let editor = Editor("aaa bbb ccc")
+    @Test func movesMarksWithEditsAndDropsEditedOnes() throws {
+        let editor = try Editor("aaa bbb ccc")
         editor.update(
             lint: Workspace.Lint(
                 file: editor.document, text: "aaa bbb ccc",
@@ -50,8 +50,8 @@ struct CodeTextViewTests {
         #expect(editor.marks == [NSRange(location: 0, length: 3), NSRange(location: 10, length: 3)])
     }
 
-    @Test func takesInOutsideChangesKeepingTheCaret() {
-        let editor = Editor("hello world")
+    @Test func takesInOutsideChangesKeepingTheCaret() throws {
+        let editor = try Editor("hello world")
         editor.type("!", at: 11)
         editor.textView.setSelectedRange(NSRange(location: 5, length: 0))
 
@@ -67,8 +67,8 @@ struct CodeTextViewTests {
         #expect(editor.textView.selectedRange() == NSRange(location: 2, length: 0))
     }
 
-    @Test func keepsTextBeingComposed() {
-        let editor = Editor("API の")
+    @Test func keepsTextBeingComposed() throws {
+        let editor = try Editor("API の")
         editor.textView.setSelectedRange(NSRange(location: 5, length: 0))
         editor.textView.setMarkedText(
             "せつめい", selectedRange: NSRange(location: 4, length: 0),
@@ -80,8 +80,8 @@ struct CodeTextViewTests {
         #expect(editor.textView.string == "API のせつめい")
     }
 
-    @Test func startsOverForAnotherDocument() {
-        let editor = Editor("aaa bbb")
+    @Test func startsOverForAnotherDocument() throws {
+        let editor = try Editor("aaa bbb")
         editor.update(lint: editor.lint(errorAt: NSRange(location: 0, length: 3)))
         editor.type("x", at: 7)
 
@@ -93,8 +93,8 @@ struct CodeTextViewTests {
         #expect(editor.textView.undoManager?.canUndo == false)
     }
 
-    @Test func findsInTheFindBar() {
-        let editor = Editor("hello world")
+    @Test func findsInTheFindBar() throws {
+        let editor = try Editor("hello world")
         let sender = NSMenuItem()
         sender.tag = NSTextFinder.Action.showFindInterface.rawValue
 
@@ -104,7 +104,7 @@ struct CodeTextViewTests {
     }
 
     @Test func highlightsMatchesAndFollowsEdits() throws {
-        let editor = Editor("手順 TODO")
+        let editor = try Editor("手順 TODO")
         let configuration = try Configuration(
             data: Data(##"{ "highlights": [{ "pattern": "TODO", "background": "#3a3220" }] }"##.utf8))
 
@@ -137,16 +137,18 @@ private final class Editor {
     private(set) var changes: [String] = []
     private var lint: Workspace.Lint?
     private var configuration: Configuration?
+    let textView: NSTextView
+    let layoutManager: LintLayoutManager
 
-    init(_ text: String) {
+    init(_ text: String) throws {
         window.isReleasedWhenClosed = false
         // The window gives the text view its undo manager
         window.contentView = coordinator.makeScrollView(text: text, document: document)
+        textView = try #require(coordinator.textView)
+        layoutManager = try #require(textView.layoutManager as? LintLayoutManager)
         coordinator.onChange = { [unowned self] in changes.append($0) }
     }
 
-    var textView: NSTextView { coordinator.textView! }
-    var layoutManager: LintLayoutManager { (textView.layoutManager as? LintLayoutManager)! }
     var marks: [NSRange] { layoutManager.marks.map(\.range) }
 
     var highlighted: [Range<Int>] {
