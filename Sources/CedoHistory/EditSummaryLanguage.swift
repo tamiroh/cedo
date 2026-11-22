@@ -16,9 +16,9 @@ extension EditSummary {
         let smallFixes: String
 
         /// The first one is used when the text is in none of them.
-        static let supported: [Language] = [.english, .japanese]
+        static let supported: [Self] = [.english, .japanese]
 
-        static func detect(in text: String) -> Language {
+        static func detect(in text: String) -> Self {
             let recognizer = NLLanguageRecognizer()
             recognizer.languageConstraints = supported.map(\.code)
             recognizer.processString(text)
@@ -29,7 +29,7 @@ extension EditSummary {
             quotes.open + text + quotes.close
         }
 
-        static let english = Language(
+        static let english = Self(
             code: .english,
             quotes: ("\"", "\""),
             period: ".",
@@ -46,7 +46,7 @@ extension EditSummary {
             smallFixes: "Fixed small wording"
         )
 
-        static let japanese = Language(
+        static let japanese = Self(
             code: .japanese,
             quotes: ("「", "」"),
             period: "。",

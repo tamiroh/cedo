@@ -33,7 +33,7 @@ struct UIState: Codable {
     // Missing keys fall back to the defaults, so a new property doesn't discard the saved state
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        let defaults = UIState()
+        let defaults = Self()
         folderPath = try container.decodeIfPresent(String.self, forKey: .folderPath)
         filePaths = try container.decodeIfPresent([String: String].self, forKey: .filePaths) ?? defaults.filePaths
         panel = try container.decodeIfPresent(Panel.self, forKey: .panel)
@@ -46,10 +46,10 @@ struct UIState: Codable {
         showsNotes = try container.decodeIfPresent(Bool.self, forKey: .showsNotes) ?? defaults.showsNotes
     }
 
-    static func load() -> UIState {
+    static func load() -> Self {
         guard let data = UserDefaults.standard.data(forKey: key),
-            let state = try? JSONDecoder().decode(UIState.self, from: data)
-        else { return UIState() }
+            let state = try? JSONDecoder().decode(Self.self, from: data)
+        else { return Self() }
         return state
     }
 

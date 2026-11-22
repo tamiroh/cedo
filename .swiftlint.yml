@@ -15,6 +15,7 @@ opt_in_rules:
   - async_without_await
   - discarded_notification_center_observer
   - local_doc_comment
+  - prefer_self_in_static_references
   - private_swiftui_state
   - redundant_self
   - superfluous_else
