@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@testable import CedoApp
+@testable import CedoUI
 
 @MainActor
 struct FileNavigationTests {

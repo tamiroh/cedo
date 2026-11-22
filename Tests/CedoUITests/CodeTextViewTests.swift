@@ -1,8 +1,8 @@
 import AppKit
 import Testing
 
-@testable import CedoApp
 @testable import CedoKit
+@testable import CedoUI
 
 @MainActor
 struct CodeTextViewTests {

@@ -5,7 +5,7 @@ import CedoSupport
 import Foundation
 
 @MainActor
-final class Workspace: ObservableObject {
+package final class Workspace: ObservableObject {
     struct Lint {
         let id = UUID()
         let file: URL
@@ -56,7 +56,7 @@ final class Workspace: ObservableObject {
     }
     var panel: UIState.Panel? { ui.panel }
 
-    init() {
+    package init() {
         autoCommitter.onCommit = { [weak self] in self?.historyVersion += 1 }
 
         resignActiveObserver = NotificationCenter.default.addObserver(
@@ -73,7 +73,7 @@ final class Workspace: ObservableObject {
         }
     }
 
-    func prepareToQuit() -> Bool {
+    package func prepareToQuit() -> Bool {
         guard saveBeforeLeaving() else { return false }
         autoCommitter.flushAndWait()
         return true

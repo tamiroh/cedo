@@ -14,8 +14,11 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "CedoApp",
-            dependencies: ["CedoHistory", "CedoKit", "CedoSupport", "SwiftTerm"],
-            path: "Sources/CedoApp"
+            dependencies: ["CedoUI"]
+        ),
+        .target(
+            name: "CedoUI",
+            dependencies: ["CedoHistory", "CedoKit", "CedoSupport", "SwiftTerm"]
         ),
         .target(
             name: "CedoKit",
@@ -31,9 +34,9 @@ let package = Package(
             path: "Tests/CedoKitTests"
         ),
         .testTarget(
-            name: "CedoAppTests",
-            dependencies: ["CedoApp", "CedoKit"],
-            path: "Tests/CedoAppTests"
+            name: "CedoUITests",
+            dependencies: ["CedoUI", "CedoKit"],
+            path: "Tests/CedoUITests"
         ),
     ]
 )
