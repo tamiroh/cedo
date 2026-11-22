@@ -1,6 +1,10 @@
-# Cedo
+<p align="center">
+  <img src="Support/AppIcon.png" width="128" alt="">
+</p>
 
-A “minimal” text editor for long-form writing.
+<h1 align="center">Cedo</h1>
+
+<p align="center">A “minimal” text editor for long-form writing.</p>
 
 ## Concept
 
